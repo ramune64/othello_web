@@ -2,6 +2,9 @@ html{
     background: linear-gradient(rgb(255, 219, 225),rgb(209, 243, 255));
     min-height:100vh;
 }
+body{
+    height: fit-content;
+}
 #othello_board{
     position: relative;
     background-color: rgb(36, 164, 26);
@@ -281,5 +284,11 @@ html{
         & h3{
             font-size: 12pt;
         }
+    }
+    #calculating{
+        top: 90%;
+    }
+    #result_parent{
+        width: 80%;
     }
 }
