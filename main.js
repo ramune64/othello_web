@@ -399,6 +399,9 @@ function scaleToFit() {
     console.log(scale);
     othello_board.style.width="740px";
     othello_board.style.transform = `scale(${scale})`;
+    
+    const baseHeight = 740;
+    //どれだけ小さくなったかを計算し、以下の要素をその分だけ上にあげる
 }
 
 window.addEventListener("load", scaleToFit);
