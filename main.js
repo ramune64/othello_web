@@ -403,4 +403,3 @@ function scaleToFit() {
 
 window.addEventListener("load", scaleToFit);
 window.addEventListener("resize", scaleToFit);
-addEventListener('py:ready',scaleToFit);
