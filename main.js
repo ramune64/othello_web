@@ -62,6 +62,8 @@ const black_num_txt = document.getElementById("black_num");
 const white_num_txt = document.getElementById("white_num");
 const winner_txt = document.getElementById("winner");
 const record_txt = document.getElementById("record");
+
+const calculating_ele = document.getElementById("calculating");
 function update_turn(white_board,black_board){
     board2place(white_board,black_board);
     let color_index;
@@ -124,9 +126,11 @@ function update_turn(white_board,black_board){
         current_color = first_check_color;
     }
     if(current_color != colors[pl_color] && pl_color!=0){
+        calculating_ele.style.display = "block";
         //console.log("minimax");
         window.setTimeout(()=>{
             calculate_CPU(cpu_LV,current_color,white_board,black_board);
+            calculating_ele.style.display = "none";
         },"500")
         
         //ここにレベル別の処理と、処理中の表示、手が決まったら再帰的にこの関数を呼び出す。
@@ -317,8 +321,11 @@ color_button_parent.addEventListener("click",e=>{
             pl_color = 1;
             color_button_parent.style.display="none";
             over_wrap.style.display = "none";
+            calculating_ele.style.display = "block";
             window.setTimeout(()=>{
+                
                 calculate_CPU(cpu_LV,current_color,current_white,current_black);
+                calculating_ele.style.display = "none";
             },"1000")
         }else if(target.id=="black"){
             pl_color = -1;
@@ -377,3 +384,23 @@ reset.addEventListener("click",()=>{
     level_txt.innerText = "";
     start_up(1);
 })
+
+
+function scaleToFit() {
+    const baseWidth = 740;
+    const othello_board = document.getElementById("othello_board");
+    othello_board.style.width="100%";
+    const current_width = othello_board.getBoundingClientRect().width;
+    const windowWidth = window.innerWidth/window.devicePixelRatio;
+    console.log("current_width:", current_width);
+
+    // 必要に応じて scale を決定
+    const scale = current_width < baseWidth ? current_width / baseWidth : 1;
+    console.log(scale);
+    othello_board.style.width="740px";
+    othello_board.style.transform = `scale(${scale})`;
+}
+
+window.addEventListener("load", scaleToFit);
+window.addEventListener("resize", scaleToFit);
+addEventListener('py:ready',scaleToFit);

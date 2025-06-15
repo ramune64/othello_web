@@ -9,6 +9,7 @@ html{
     height: 740px;
     border-radius: 10px;
     margin: auto;
+    transform-origin: top left;
 }
 .box{
     position: absolute;
@@ -255,4 +256,30 @@ html{
 }
 #reset{
     background-color: rgba(173, 216, 230, 0.728);
+}
+#calculating{
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+@media screen and (max-width: 480px) {
+	
+    h1{
+        font-size: 15pt;
+    }
+    h2{
+        font-size: 13pt;
+    }
+    h3 {
+        font-size: 15pt;
+    }
+    #mode_button_parent{
+        width: 100%;
+        & h3{
+            font-size: 12pt;
+        }
+    }
 }

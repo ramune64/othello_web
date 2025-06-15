@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        
 
         <link rel="stylesheet" href="style.css" type="text/css">
         <!-- PyScript CSS -->
@@ -27,6 +27,7 @@
         addEventListener('py:ready', () => {loading.close();over_wrap.style.display="block";mode_button_parent.style.display="block";});
         loading.showModal();
     </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>othello</title>
 </head>
     <body>
@@ -64,6 +65,7 @@
         <h1>
             オセロ～with e-Coach_AI～
         </h1>
+        <h1 id="calculating">計算中...</h1>
         <div id="othello_board">
             <div id="col_guide_parent">
                 <div>a</div>
@@ -116,11 +118,8 @@
                 <div class="mode_button" id="lv5">
                     <h2>CPUと(LV5,depth=5)</h2>
                 </div>
-                <div class="mode_button" id="lv6">
-                    <h2>CPUと(LV6,depth=6)</h2>
-                </div>
             </div>
-            <h3>※レベルが高い(特にLV5以上)ほど計算に時間がかかります</h3>
+            <h3>※レベルが高い(特にLV5)ほど計算に時間がかかります</h3>
         </div>
         <div id="color_button_parent">
             <h1>あなたの手番を選択</h1>
