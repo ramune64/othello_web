@@ -385,13 +385,13 @@ reset.addEventListener("click",()=>{
     start_up(1);
 })
 
-
+const under_board = document.getElementById("under_board");
 function scaleToFit() {
     const baseWidth = 740;
     const othello_board = document.getElementById("othello_board");
+    othello_board.style.transform = `scale(${1})`;
     othello_board.style.width="100%";
     const current_width = othello_board.getBoundingClientRect().width;
-    const windowWidth = window.innerWidth/window.devicePixelRatio;
     console.log("current_width:", current_width);
 
     // 必要に応じて scale を決定
@@ -400,8 +400,18 @@ function scaleToFit() {
     othello_board.style.width="740px";
     othello_board.style.transform = `scale(${scale})`;
     
-    const baseHeight = 740;
     //どれだけ小さくなったかを計算し、以下の要素をその分だけ上にあげる
+    const baseHeight = 740;
+    const real_height = baseHeight*scale;
+    const offset_Y = baseHeight - real_height;
+    under_board.style.transform  = `translateY(-${offset_Y}px)`;
+
+    if(scale!==1){
+        const top = real_height + 30+30+30
+        calculating_ele.style.top = `${top}px`;
+    }else{
+        calculating_ele.style.top = `0`;
+    }
 }
 
 window.addEventListener("load", scaleToFit);
