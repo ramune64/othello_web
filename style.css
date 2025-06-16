@@ -273,7 +273,7 @@ body{
 @media screen and (max-width: 920px) {
 	
     h1{
-        font-size: 15pt;
+        font-size: 12pt;
     }
     h2{
         font-size: 9pt;
@@ -300,5 +300,8 @@ body{
     }
     #reset,#re_copy_record{
         margin: 15px auto;
+    }
+    .flex{
+        gap: 0;
     }
 }
