@@ -1,9 +1,9 @@
 html{
     background: linear-gradient(rgb(255, 219, 225),rgb(209, 243, 255));
-    min-height:100vh;
 }
-body{
+html, body {
     height: fit-content;
+    margin: 0;
 }
 #othello_board{
     position: relative;
@@ -61,7 +61,7 @@ body{
     position: absolute;
     display: none;
     width: 100%;
-    height: 100%;
+    height: 100vh;
     top: 0;
     left: 0;
     z-index: 5;
@@ -269,6 +269,9 @@ body{
 }
 #under1{
     display: flex;justify-content: center;gap: 20px;margin-top: 10px;
+}
+#overview{
+    text-align: center;
 }
 @media screen and (max-width: 920px) {
 	

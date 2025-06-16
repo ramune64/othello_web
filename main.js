@@ -412,6 +412,9 @@ function scaleToFit() {
     }else{
         calculating_ele.style.top = `0`;
     }
+
+    const pageHeight = document.documentElement.scrollHeight;
+    over_wrap.style.height = `${pageHeight}px`;
 }
 
 window.addEventListener("load", scaleToFit);
