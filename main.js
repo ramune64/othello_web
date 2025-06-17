@@ -64,6 +64,7 @@ const winner_txt = document.getElementById("winner");
 const record_txt = document.getElementById("record");
 
 const calculating_ele = document.getElementById("calculating");
+const whitch_color = document.getElementById("whitch_color");
 function update_turn(white_board,black_board){
     board2place(white_board,black_board);
     let color_index;
@@ -134,6 +135,16 @@ function update_turn(white_board,black_board){
         },"500")
         
         //ここにレベル別の処理と、処理中の表示、手が決まったら再帰的にこの関数を呼び出す。
+    }else if(pl_color==0){
+        if(current_color == "white"){
+            whitch_color.classList.remove("black_turn");
+            whitch_color.classList.add("white_turn");
+            whitch_color.innerText = "白のターン";
+        }else{
+            whitch_color.classList.remove("black_turn");
+            whitch_color.classList.add("white_turn");
+            whitch_color.innerText = "黒のターン";
+        }
     }
 }
 
@@ -304,6 +315,8 @@ mode_button_parent.addEventListener("click",e=>{
             mode_button_parent.style.display = "none";
             over_wrap.style.display = "none";
             pl_color = 0;
+            whitch_color.innerText = "黒のターン";
+            whitch_color.style.display = "block";
         }else{
             cpu_LV = target.id.replace("lv","");
             color_button_parent.style.display="block";
@@ -382,6 +395,7 @@ reset.addEventListener("click",()=>{
     re_copy_record.style.display = "none";
     reset.style.display = "none";
     level_txt.innerText = "";
+    whitch_color.style.display = "none";
     start_up(1);
 })
 
