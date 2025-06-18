@@ -4,6 +4,7 @@ html{
 html, body {
     height: fit-content;
     margin: 0;
+    min-height: 100vh;
 }
 #othello_board{
     position: relative;
@@ -274,7 +275,7 @@ html, body {
     text-align: center;
 }
 .black_turn{
-    color: black;
+    color: gray;
     -webkit-text-stroke-width: 0.5px;
     -webkit-text-stroke-color: black;
 }
@@ -282,6 +283,41 @@ html, body {
     color: gray;
     -webkit-text-stroke-width: 0.5px;
     -webkit-text-stroke-color: white;
+}
+#ad_space1_parent,#ad_space2_parent,#upper_space{
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap-reverse;
+}
+#ad_space3_parent,#ad_space4_parent{
+    margin: 10px;
+}
+.ad_space1,.ad_space2{
+    margin: auto;
+    width: 400px;
+    height: 250px;
+    background-color: white;
+}
+.ad_space3,.ad_space4{
+    height: 80%;
+    width: 300px;
+    background-color: white;
+}
+#fotter{
+    height: 50px;
+    margin-top: auto;
+    vertical-align: middle;
+    margin-top:auto;
+    text-align: center;
+    & p{
+        display: block;
+        margin: 25px;
+    }
+}
+@media screen and (max-width: 500px) {
+    .ad_space1,.ad_space2{
+    width: 80%;
+}
 }
 @media screen and (max-width: 920px) {
 	
@@ -317,4 +353,16 @@ html, body {
     .flex{
         gap: 0;
     }
+}
+@media screen and (max-width: 1415px) {
+    #ad_space3_parent,#ad_space4_parent{
+        display: none;
+    }
+    #upper_space{
+        display: block;
+    }
+}
+
+#ad_space1_parent,#ad_space2_parent,#ad_space3_parent,#ad_space4_parent{
+    display: none;
 }

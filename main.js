@@ -141,8 +141,8 @@ function update_turn(white_board,black_board){
             whitch_color.classList.add("white_turn");
             whitch_color.innerText = "白のターン";
         }else{
-            whitch_color.classList.remove("black_turn");
-            whitch_color.classList.add("white_turn");
+            whitch_color.classList.remove("white_turn");
+            whitch_color.classList.add("black_turn");
             whitch_color.innerText = "黒のターン";
         }
     }
@@ -317,6 +317,7 @@ mode_button_parent.addEventListener("click",e=>{
             pl_color = 0;
             whitch_color.innerText = "黒のターン";
             whitch_color.style.display = "block";
+            level_txt.innerText="2人で対戦";
         }else{
             cpu_LV = target.id.replace("lv","");
             color_button_parent.style.display="block";
@@ -347,7 +348,6 @@ color_button_parent.addEventListener("click",e=>{
         }else{
             color_button_parent.style.display="none";
             mode_button_parent.style.display = "block";
-            level_txt.innerText="";
         }
     }
 })
@@ -423,8 +423,10 @@ function scaleToFit() {
     if(scale!==1){
         const top = real_height + 30+30+30
         calculating_ele.style.top = `${top}px`;
+        whitch_color.style.top = `${top}px`;
     }else{
         calculating_ele.style.top = `0`;
+        whitch_color.style.top = `0`;
     }
 
     const pageHeight = document.documentElement.scrollHeight;
