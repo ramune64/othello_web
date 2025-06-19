@@ -1178,7 +1178,7 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
 
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #print(score_flat.shape)
     #print(score_flat)
     #mode1 = input("手入力->0,ランダムで記録->1,棋譜を入力して盤面再現->2,AI(黒)vsRandom->3,AI(白)vsRandom->4を入力:")
@@ -1202,7 +1202,7 @@ if __name__ == "__main__":
     print("勝率:"+str((w_win/num_game)*100)+"%")
     zobristhash.save_table() """
     #import time
-    import timeit
+    #import timeit
     #board = np.zeros((8, 8), dtype=int)
 
     """ b = np.array([
@@ -1243,7 +1243,7 @@ if __name__ == "__main__":
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]) """
-    b = np.array([
+    """ b = np.array([
             [-1,-1 , -1,  1,  0, -1, -1, -1],
             [ 1, 1 ,  1,  1,  1, -1, -1, -1],
             [ 1, 1 , -1, -1, -1,  1, -1, -1],
@@ -1262,7 +1262,7 @@ if __name__ == "__main__":
             [ 1, 0 ,  0,  0,  0,  0,  0,  0],
             [ 1,-1 , -1, -1, -1, -1, -1, -1]])
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
-    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
+    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF """
     #c_white = board_to_bitboard(c.copy(), 1)&0xFFFFFFFFFFFFFFFF
     #c_black = board_to_bitboard(c.copy(), -1)&0xFFFFFFFFFFFFFFFF
     #print(white)
@@ -1273,12 +1273,12 @@ if __name__ == "__main__":
     #print(bin(white))
     #print(bin(black))
     #print(bitboard_to_numpy(c_white,c_black))
-    def a():
+    """ def a():
         #get_confirmed_stones(white,black,0,c_white,c_black)
         #evaluate_board(white,black,c_white,c_black)
         minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
     print(timeit.timeit("a()",globals=globals(),number=1))
-    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)) """
     #print(evaluate_board(white,black,c_white,c_black))
     #wc,bc = get_confirmed_stones(white,black,0,c_white,c_black)
     
