@@ -128,10 +128,10 @@ function update_turn(white_board,black_board){
     }
     if(current_color != colors[pl_color] && pl_color!=0){
         calculating_ele.style.display = "block";
+        console.log("block");
         //console.log("minimax");
         window.setTimeout(()=>{
             calculate_CPU(cpu_LV,current_color,white_board,black_board);
-            calculating_ele.style.display = "none";
         },"500")
         
         //ここにレベル別の処理と、処理中の表示、手が決まったら再帰的にこの関数を呼び出す。
@@ -149,6 +149,8 @@ function update_turn(white_board,black_board){
 }
 
 function calculate_CPU(lv,current_color,white,black){
+    calculating_ele.style.display = "block";
+    console.log("block");
     let act_str,_;
     //console.log(current_color,white,black);
     if(lv==0){
@@ -172,6 +174,8 @@ function calculate_CPU(lv,current_color,white,black){
     [current_white,current_black,flips] = result;
     current_white = BigInt(current_white);
     current_black = BigInt(current_black);
+    console.log("none");
+    calculating_ele.style.display = "none";
     update_turn(current_white,current_black);
 }
 
