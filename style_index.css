@@ -1,4 +1,28 @@
 h1{
     text-align: center;
-    font-size: 40pt;
+    font-size: 29pt;
+}
+.main_content{
+    margin: auto;
+    width: 50%;
+    & p{
+        font-size: 14pt;
+    }
+    & h2{
+        padding: 20px;
+        font-size: 22pt;
+        background-color: rgba(73, 199, 57, 0.517);
+        box-shadow: 3px 3px 15px black;
+    }
+    & h3{
+        font-size: 18pt;
+        padding: 20px;
+        background-color: rgba(128, 128, 128, 0.338);
+        border-left: 7px black solid;
+        border-right: 7px white solid;
+    }
+    & img{
+        display: block;
+        margin: auto;
+    }
 }

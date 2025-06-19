@@ -6,6 +6,20 @@ html, body {
     margin: 0;
     min-height: 100vh;
 }
+#logo{
+    height: 70px;
+}
+.main_title,#title_logo{
+    display: block;
+    height: 1.5em;
+    max-width: 70%;
+    margin: auto;
+    
+}
+.main_title{
+    height: fit-content;
+    border-bottom: 2px gray solid;
+}
 #othello_board{
     position: relative;
     background-color: rgb(36, 164, 26);
@@ -288,15 +302,16 @@ html, body {
     display: flex;
     gap: 10px;
     flex-wrap: wrap-reverse;
+    
 }
 #ad_space3_parent,#ad_space4_parent{
     margin: 10px;
 }
 .ad_space1,.ad_space2{
-    margin: auto;
     width: 400px;
     height: 250px;
     background-color: white;
+    margin: 10px auto;
 }
 .ad_space3,.ad_space4{
     height: 80%;
