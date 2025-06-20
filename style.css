@@ -319,10 +319,8 @@ html, body {
     background-color: white;
 }
 #fotter{
-    height: 50px;
-    margin-top: auto;
-    vertical-align: middle;
-    margin-top:auto;
+    height: fit-content;
+    margin-top: 100px;
     text-align: center;
     & p{
         display: block;
@@ -330,9 +328,15 @@ html, body {
     }
 }
 @media screen and (max-width: 500px) {
+    #logo{
+        height: 50px;
+    }
     .ad_space1,.ad_space2{
-    width: 80%;
-}
+        width: 80%;
+    }
+    .main_title{
+        max-width: 90%;
+    }
 }
 @media screen and (max-width: 920px) {
 	

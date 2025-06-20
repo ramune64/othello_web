@@ -28,5 +28,35 @@ h1{
     & img{
         display: block;
         margin: auto;
+        width: 60%;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    h1{
+        font-size: 16pt;
+    }
+    .main_content{
+        width: 90%;
+        & p{
+            font-size: 11pt;
+        }
+        & li{
+            font-size: 10pt;
+        }
+        & h2{
+            font-size: 18pt;
+            padding: 10px;
+        }
+        & h3{
+            font-size: 16pt;
+            padding: 7px;
+        }
+        & h4{
+            font-size: 13pt;
+        }
+        & img{
+            width: 90%;
+        }
     }
 }
