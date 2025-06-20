@@ -21,6 +21,10 @@ h1{
         border-left: 7px black solid;
         border-right: 7px white solid;
     }
+    & h4{
+        font-size: 16pt;
+        background: linear-gradient(rgba(0,0,0,0) 50%, rgb(111, 214, 195) 100%);
+    }
     & img{
         display: block;
         margin: auto;

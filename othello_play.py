@@ -1024,7 +1024,9 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
     #board1 = board.copy()
     #print("-------depth---------",depth)
     #print(is_terminal(board1))
-    if depth == 0 or is_terminal(board_w,board_b):    #ここが葉ノードなら
+    white_legal_list=get_legal_square("white",board_w,board_b)
+    black_legal_list=get_legal_square("black",board_w,board_b)
+    if depth == 0 or is_terminal(board_w,board_b) or (white_legal_list==[] and black_legal_list==[]):    #ここが葉ノードなら
         #print("-----葉ノード-----")
         score = evaluate_board(board_w,board_b,last_con_w,last_con_b)
         #if score == float("inf"):
@@ -1039,13 +1041,13 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
     other_scores = {}
     if maximizing_player:
         #print("aTrue")
-        legal_list=get_legal_square("white",board_w,board_b)
+        legal_list=white_legal_list
         #legal_list = sorted(legal_list,key=lambda x:new_board_and_eval(x,board1.copy(),"white"),reverse=True)
         if legal_list == []:
             #con_w,con_b = 0,0
             #con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
             
-            return minimax(board_w,board_b,depth-1,alpha,beta,False,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
+            return minimax(board_w,board_b,depth,alpha,beta,False,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
         max_eval = float('-inf')
         best_move = None
         for move in legal_list:
@@ -1088,7 +1090,7 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
         return max_eval,best_move
     else:
         #print("aFalse")
-        legal_list=get_legal_square("black",board_w,board_b)
+        legal_list=black_legal_list
         #legal_list = sorted(legal_list,key=lambda x:new_board_and_eval(x,board1.copy(),"black"),reverse=False)
         min_eval = float('inf')
         best_move = None
@@ -1098,7 +1100,7 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
             #if depth<0:
             #    con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
             #con_w,con_b = 0,0
-            return minimax(board_w,board_b,depth-1,alpha,beta,True,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
+            return minimax(board_w,board_b,depth,alpha,beta,True,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
 
         for move in legal_list:
             if stop_queue != None:
