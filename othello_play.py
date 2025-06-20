@@ -223,28 +223,32 @@ def get_color_direction_color(board, x, y, dx, dy, last_color):
     else:
         return "akan"
 
-def get_confirmed_stones(board_w,board_b,mode=0):
+def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
     """盤面における確定石の枚数を求める関数"""
     #n = len(board)  # 盤面のサイズ (8x8)
-    black_confirmed = 0  # 黒石の確定石を記録する数
-    white_confirmed = 0  # 白石の確定石を記録する数
-    confirmed_all = 0
+    black_confirmed = last_con_b  # 黒石の確定石を記録する数
+    white_confirmed = last_con_w  # 白石の確定石を記録する数
+    #print(bitboard_to_numpy(last_con_w,last_con_b))
+    confirmed_all = last_con_w | last_con_b
     corners = [(0,0),(0,7),(7,0),(7,7)]
     queue = []
     empty = ~(board_b | board_w)& 0xFFFFFFFFFFFFFFFF
     for row,col in corners:
         index = row*8 + col
         corner_bit = 1 << index
+        #print(index)
         if not corner_bit&empty:
             if corner_bit&board_w:
                 confirmed_all |= corner_bit
                 white_confirmed |= corner_bit
                 queue.append((row,col,1))
+                #print("white")
             else:
                 confirmed_all |= corner_bit
                 black_confirmed |= corner_bit
                 queue.append((row,col,-1))
-
+                #print("black")
+    #print(bitboard_to_numpy(white_confirmed,black_confirmed))
     #print("queue",queue)
     # 端の石（隅や辺）の位置をキューに追加
     #directions = [(-1, 0), (0, -1), (0, 1), (1, 0)]
@@ -260,11 +264,14 @@ def get_confirmed_stones(board_w,board_b,mode=0):
             last_color = origin_color
             index = row*8 + col
             now_bit = 1 << index
+            
             while True:
                 #result = get_color_direction_color(board,nx,ny,dx,dy,last_color)
                 if (now_bit&~LEFT_MASK&0xFFFFFFFFFFFFFFFF and (direction in [1,-7,9])) or (now_bit&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF and (direction in [-1,7,-9])):
                     break
                 shifted = shift_board(now_bit,direction)
+                """ if  (confirmed_all & now_bit) != 0:
+                    continue """
                 """ if (direction in [1,-7,9]) and direction != 8:
                     shifted_masked = shifted & LEFT_MASK
                 elif direction < 0 and direction != -8:
@@ -286,6 +293,7 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                     last_color = -1
                 else:
                     break
+    #print(queue)
     for s in queue:
         row, col ,origin_color = s
         for direction in DIRECTIONS[4:]:
@@ -296,6 +304,8 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                 if (now_bit&~LEFT_MASK&0xFFFFFFFFFFFFFFFF and (direction in [1,-7,9])) or (now_bit&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF and (direction in [-1,7,-9])):
                     break
                 shifted = shift_board(now_bit,direction)
+                """ if  (confirmed_all & shifted) != 0:
+                    continue """
                 """ if direction > 0 and direction != 8:
                     shifted_masked = shifted & RIGHT_MASK
                 elif direction < 0 and direction != -8:
@@ -306,6 +316,14 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                 adjust_board_b = shifted & board_b
                 now_bit = shifted
                 if adjust_board_w or adjust_board_b:
+                    if adjust_board_w:
+                        if white_confirmed & adjust_board_w:
+                            break
+                        last_color = 1
+                    if adjust_board_b:
+                        if black_confirmed & adjust_board_b:
+                            break
+                        last_color = -1
                     #print("naname,arimasu")
                     check_list = []#ここに1,2,3,4全てそろえばOK
                     for direction2 in DIRECTIONS:
@@ -322,7 +340,7 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                             now_bit2 = shifted2
                             #n2x,n2y = n2x + d2x, n2y + d2y
                             #print(last_color2,result2)
-                            
+                            #print(last_color,now_bit2.bit_length(),now_bit.bit_length())
                             if adjust_board_w2 or adjust_board_b2:#シフトした先に何かしらの石がある場合
                                 if last_color2 == 1:
                                     if white_confirmed&adjust_board_w2:#そのマスが白色の確定石なら
@@ -341,7 +359,7 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                                         last_color2 = 1
                                         break
                                     else:
-                                        last_color2 = -1
+                                        last_color2 = last_color
                                         break
                                         #print("ここ、確定石。")
                                 else:
@@ -361,7 +379,7 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                                         last_color2 = -1
                                         break
                                     else:
-                                        last_color2 = 1
+                                        last_color2 = last_color
                                         break
                                                                                 #右移動                                                 #左移動
                             elif (not shifted2) or shifted2.bit_length() > 64 or ((direction2 in [-1,7,-9]) and shifted2&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction2 in [1,-7,9]) and shifted2&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF):
@@ -383,47 +401,6 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                                 break
                             else:
                                 break
-                    """ for direction2 in DIRECTIONS[4:]:
-                        #print("dir",(d2x,d2y))
-                        last_color2 = last_color
-                        n2x,n2y = nx , ny
-                        #print("startpos",(nx,ny))
-                        while True:
-                            #print("ココが頭だ")
-                            #result2 = get_color_direction_color(board,n2x,n2y,d2x,d2y,last_color2)
-                            shifted = shift_board(now_bit2,direction2)
-                            if direction > 0 and direction != 8:
-                                shifted_masked = shifted & LEFT_MASK
-                            elif direction < 0 and direction != -8:
-                                shifted_masked = shifted & RIGHT_MASK
-                            else:
-                                shifted_masked = shifted
-                            adjust_board_w = shifted_masked & board_w
-                            adjust_board_b = shifted_masked & board_b
-                            now_bit2 = shifted
-                            #n2x,n2y = n2x + d2x, n2y + d2y
-                            #print(last_color2,result2)
-                            if result2 != last_color2 and result2 != "akan":
-                                #print("はいダメー")
-                                break
-
-                            if result2 == last_color2:
-                                if confirmed_all[n2x,n2y] == 1 or confirmed_all[n2x,n2y] == -1:#1マスずれた先が既に確定石と判明している
-                                    #print("ここ、確定石。")
-                                    pass
-                                else:
-                                    #print("ここ、偽物。")
-                                    break
-                            elif result2 == "akan":
-                                #print("ココ壁っすわ")
-                                if d2x*d2y == 1:#右上左下方向の移動なら
-                                    #print("種類3")
-                                    check_list.append(3)
-                                if d2x*d2y == -1:#右下左上方向の移動なら
-                                    #print("種類4")
-                                    check_list.append(4)
-                                break
-                            last_color2 = result2 """
                     #print(check_list)
                     if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
                         #print("新たな確定石、素晴らしい。")
@@ -439,591 +416,362 @@ def get_confirmed_stones(board_w,board_b,mode=0):
                 else:
                     break
     #return white_confirmed,black_confirmed
-
-    #ここからは他の場所の確定石を数えていきます
-    #all_white = np.where(board == 1)
-    all_white = []
-    get_all_white = board_w
-    while get_all_white:
-            position = get_all_white & -get_all_white
-            get_all_white-=position
-            index = position.bit_length() - 1
-            #row = index // 8
-            #col = index % 8
-            only_white = 1 << index
-            all_white.append(only_white)
-            #(列(上から),行(左から))のタプルの配列に変換
-            #all_white = list(zip(all_white[0], all_white[1]))
-    #print(all_white)
-    for only_white in all_white:
-            if not only_white & white_confirmed:#この石がまだ確定石判定を受けていなかったら
-                #print("マダ")
-                #index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_white
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_white
-                    shifted = shift_board(now_bit,direction)
-                    """ if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted """
-                    adjust_board_w = shifted & board_w
-                    adjust_board_b = shifted & board_b
-                    """ if abs(direction) == 9:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or (shifted.bit_length() > 64) or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
-                        """ print("壁or同じ色の確定石")
-                        print("同じ色の確定石：",white_confirmed & adjust_board_w)
-                        print(direction)
-                        if direction == 1:
-                            print(bitboard_to_numpy(shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF,0))
-                            print(shifted.bit_length()) """
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print("white")
-                #print(check_list)
-                #リストを変換するよ
-                #print(check_list)
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_white
-                    white_confirmed |= only_white
-
-    get_all_black = board_b
-    all_black = []
-    while get_all_black:
-            position = get_all_black & -get_all_black
-            index = position.bit_length() - 1
-            get_all_black-=position
-            row = index // 8
-            col = index % 8
-            #print(row,col)
-            only_black = 1 << index
-            #(列(上から),行(左から))のタプルの配列に変換
-            #all_white = list(zip(all_white[0], all_white[1]))
-            all_black.append(only_black)
-            
-
-    #print(all_black)
-    for only_black in all_black:
-            if not only_black & black_confirmed:#この石がまだ確定石判定を受けていなかったら
-                index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_black
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_black
-                    shifted = shift_board(now_bit,direction)
-                    if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted
-                    adjust_board_w = shifted_masked & board_w
-                    adjust_board_b = shifted_masked & board_b
-                    """ if abs(direction) == 7:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_black
-                    black_confirmed |= only_black
-    #return white_confirmed,black_confirmed
-    #2週目(逆順)
-    for only_white in reversed(all_white):
-            if not only_white & white_confirmed:#この石がまだ確定石判定を受けていなかったら
-                #index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_white
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_white
-                    shifted = shift_board(now_bit,direction)
-                    """ if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted """
-                    adjust_board_w = shifted & board_w
-                    adjust_board_b = shifted & board_b
-                    """ if abs(direction) == 9:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (white_confirmed & adjust_board_w) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction ==-7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print("white")
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_white
-                    white_confirmed |= only_white
-    for only_black in reversed(all_black):
-            if not only_black & black_confirmed:#この石がまだ確定石判定を受けていなかったら
-                index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_black
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_black
-                    shifted = shift_board(now_bit,direction)
-                    if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted
-                    adjust_board_w = shifted_masked & board_w
-                    adjust_board_b = shifted_masked & board_b
-                    """ if abs(direction) == 7:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == 9 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == -7:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction == 9 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == -7:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_black
-                    black_confirmed |= only_black
     
-    #3週目
-    for only_white in all_white:
-            if not only_white & white_confirmed:#この石がまだ確定石判定を受けていなかったら
-                #index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_white
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_white
-                    shifted = shift_board(now_bit,direction)
-                    """ if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted """
-                    adjust_board_w = shifted & board_w
-                    adjust_board_b = shifted & board_b
-                    """ if abs(direction) == 9:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (white_confirmed & adjust_board_w) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction ==-7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print("white")
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_white
-                    white_confirmed |= only_white
-    for only_black in all_black:
-            if not only_black & black_confirmed:#この石がまだ確定石判定を受けていなかったら
-                index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_black
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_black
-                    shifted = shift_board(now_bit,direction)
-                    if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted
-                    adjust_board_w = shifted_masked & board_w
-                    adjust_board_b = shifted_masked & board_b
-                    """ if abs(direction) == 7:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == 9 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == -7:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction == 9 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == -7:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_black
-                    black_confirmed |= only_black
-    #4週目(逆順)
-    for only_white in all_white:
-            if not only_white & white_confirmed:#この石がまだ確定石判定を受けていなかったら
-                #index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_white
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_white
-                    shifted = shift_board(now_bit,direction)
-                    """ if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted """
-                    adjust_board_w = shifted & board_w
-                    adjust_board_b = shifted & board_b
-                    """ if abs(direction) == 9:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == -7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (white_confirmed & adjust_board_w) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction ==-7 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == 9:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print("white")
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_white
-                    white_confirmed |= only_white
-    for only_black in reversed(all_black):
-            if not only_black & black_confirmed:#この石がまだ確定石判定を受けていなかったら
-                index = only_black.bit_length() - 1
-                #row = index // 8
-                #col = index % 8
-                #print(row,col)
-                check_list = []
-                now_bit = only_black
-                for direction in DIRECTIONS:
-                    #nx,ny = wx,wy
-                    #result = get_color_direction_color(board,nx,ny,dx,dy,0)
-                    now_bit = only_black
-                    shifted = shift_board(now_bit,direction)
-                    if direction > 0 and direction != 8:
-                        shifted_masked = shifted & LEFT_MASK
-                    elif direction < 0 and direction != -8:
-                        shifted_masked = shifted & RIGHT_MASK
-                    else:
-                        shifted_masked = shifted
-                    adjust_board_w = shifted_masked & board_w
-                    adjust_board_b = shifted_masked & board_b
-                    """ if abs(direction) == 7:
-                        print(direction)
-                        print(bitboard_to_numpy(0,now_bit))
-                        print(bitboard_to_numpy(0,shifted))
-                        print(shifted&~LEFT_MASK) """
-                    if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
-                        #print("w")
-                        #print(direction)
-                        if abs(direction) == 8:#上下方向の移動なら
-                            #print(6)
-                            check_list.append(6)
-                        elif abs(direction) == 1:
-                            check_list.append(5)
-                        elif direction == 9 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(7)
-                        elif direction == -9 or direction == -7:#右下左上方向の移動なら
-                            check_list.append(8)
-                    elif (not shifted) or shifted.bit_length() > 64 or ((direction in [-1,7,-9]) and shifted&~LEFT_MASK&0xFFFFFFFFFFFFFFFF) or ((direction in [1,-7,9]) and shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF) or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
-                        #print(black_confirmed & adjust_board_b)
-                        #print("b")
-                        #print(direction)
-                        
-                        if abs(direction) == 8:#上下方向の移動なら
-                            check_list.append(2)
-                        elif abs(direction) == 1:
-                            check_list.append(1)
-                        elif direction == 9 or direction == 7:#右上左下方向の移動なら
-                            #print("種類3")
-                            check_list.append(3)
-                        elif direction == -9 or direction == -7:#右下左上方向の移動なら
-                            check_list.append(4)
-                    #else:
-                        #print("u")
-                        #print(direction)
-                #print(check_list)
-                #リストを変換するよ
-                for num in [5,6,7,8]:
-                    if check_list.count(num) == 2:
-                        check_list = [x for x in check_list if x != num]#その値を全て削除
-                        check_list.append(num-4)
-                
-                if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
-                    confirmed_all |= only_black
-                    black_confirmed |= only_black    
+    #ここからは他の場所の確定石を数えていきます
 
-    # 確定石の数を数える
-    #black_confirmed_count = np.sum(black_confirmed)
-    #white_confirmed_count = np.sum(white_confirmed)
+    for k in range(2):
+        all_white = []
+        get_all_white = board_w
+        while get_all_white:
+                position = get_all_white & -get_all_white
+                get_all_white-=position
+                index = position.bit_length() - 1
+                #row = index // 8
+                #col = index % 8
+                only_white = 1 << index
+                if not only_white&white_confirmed:
+                    all_white.append(only_white)
+                #(列(上から),行(左から))のタプルの配列に変換
+                #all_white = list(zip(all_white[0], all_white[1]))
+        #print(all_white)
 
-    #return black_confirmed_count, white_confirmed_count
+        get_all_black = board_b
+        all_black = []
+        while get_all_black:
+                position = get_all_black & -get_all_black
+                index = position.bit_length() - 1
+                get_all_black-=position
+                row = index // 8
+                col = index % 8
+                #print(row,col)
+                only_black = 1 << index
+                if not only_black&black_confirmed:
+                    all_black.append(only_black)
+                #(列(上から),行(左から))のタプルの配列に変換
+                #all_white = list(zip(all_white[0], all_white[1]))
+        for only_white in all_white:
+                if not only_white & white_confirmed:#この石がまだ確定石判定を受けていなかったら
+                    #print("マダ")
+                    #index = only_black.bit_length() - 1
+                    #row = index // 8
+                    #col = index % 8
+                    #print(row,col)
+                    check_list = []
+                    now_bit = only_white
+                    for direction in DIRECTIONS:
+                        #nx,ny = wx,wy
+                        #result = get_color_direction_color(board,nx,ny,dx,dy,0)
+                        now_bit = only_white
+                        shifted = shift_board(now_bit,direction)
+                        if (direction in [-1,7,-9]) and direction != 8:
+                            shifted_masked = shifted & LEFT_MASK
+                        elif (direction in [1,-7,9]) and direction != -8:
+                            shifted_masked = shifted & RIGHT_MASK
+                        else:
+                            shifted_masked = shifted
+                        adjust_board_w = shifted_masked & board_w
+                        adjust_board_b = shifted_masked & board_b
+                        """ if abs(direction) == 9:
+                            print(direction)
+                            print(bitboard_to_numpy(0,now_bit))
+                            print(bitboard_to_numpy(0,shifted))
+                            print(shifted&~LEFT_MASK) """
+                        if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
+                            #print("w")
+                            #print(direction)
+                            if abs(direction) == 8:#上下方向の移動なら
+                                #print(6)
+                                check_list.append(6)
+                            elif abs(direction) == 1:
+                                check_list.append(5)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(7)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(8)
+                        elif (shifted_masked == 0) or (shifted_masked.bit_length() > 64) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
+                            """ print("壁or同じ色の確定石")
+                            print("同じ色の確定石：",white_confirmed & adjust_board_w)
+                            print(direction)
+                            if direction == 1:
+                                print(bitboard_to_numpy(shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF,0))
+                                print(shifted.bit_length()) """
+                            #print(black_confirmed & adjust_board_b)
+                            #print("b")
+                            #print(direction)
+                            
+                            if abs(direction) == 8:#上下方向の移動なら
+                                check_list.append(2)
+                            elif abs(direction) == 1:
+                                check_list.append(1)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(3)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(4)
+                        #else:
+                            #print("u")
+                            #print(direction)
+                    #print("white")
+                    #print(check_list)
+                    #リストを変換するよ
+                    #print(check_list)
+                    for num in [5,6,7,8]:
+                        if check_list.count(num) == 2:
+                            check_list = [x for x in check_list if x != num]#その値を全て削除
+                            check_list.append(num-4)
+                    
+                    if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
+                        confirmed_all |= only_white
+                        white_confirmed |= only_white
+
+        
+                
+
+        #print(all_black)
+        for only_black in all_black:
+                if not only_black & black_confirmed:#この石がまだ確定石判定を受けていなかったら
+                    #index = only_black.bit_length() - 1
+                    #row = index // 8
+                    #col = index % 8
+                    #print(row,col)
+                    check_list = []
+                    now_bit = only_black
+                    for direction in DIRECTIONS:
+                        #nx,ny = wx,wy
+                        #result = get_color_direction_color(board,nx,ny,dx,dy,0)
+                        now_bit = only_black
+                        shifted = shift_board(now_bit,direction)
+
+                        if (direction in [-1,7,-9]) and direction != 8:
+                            shifted_masked = shifted & LEFT_MASK
+                        elif (direction in [1,-7,9]) and direction != -8:
+                            shifted_masked = shifted & RIGHT_MASK
+                        else:
+                            shifted_masked = shifted
+                        adjust_board_w = shifted_masked & board_w
+                        adjust_board_b = shifted_masked & board_b
+                        
+                        """ print(direction)
+                        print(bitboard_to_numpy(0,shifted))
+                        print(bitboard_to_numpy(0,shifted_masked)) """
+                            #print(shifted&~LEFT_MASK)
+                        if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
+                            #print("w")
+                            #print(direction)
+                            if abs(direction) == 8:#上下方向の移動なら
+                                #print(6)
+                                check_list.append(6)
+                            elif abs(direction) == 1:
+                                check_list.append(5)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(7)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(8)
+                        elif (shifted_masked == 0) or shifted_masked.bit_length() > 64  or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
+                            #print(black_confirmed & adjust_board_b)
+                            #print("b")
+                            #print(direction)
+                            
+                            if abs(direction) == 8:#上下方向の移動なら
+                                check_list.append(2)
+                            elif abs(direction) == 1:
+                                check_list.append(1)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(3)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(4)
+                        #else:
+                            #print("u")
+                            #print(direction)
+                    #print(check_list)
+                    #リストを変換するよ
+                    for num in [5,6,7,8]:
+                        if check_list.count(num) == 2:
+                            check_list = [x for x in check_list if x != num]#その値を全て削除
+                            check_list.append(num-4)
+                    
+                    if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
+                        confirmed_all |= only_black
+                        black_confirmed |= only_black
+        #return white_confirmed,black_confirmed
+        #2週目(逆順)
+        all_white = []
+        get_all_white = board_w
+        while get_all_white:
+                position = get_all_white & -get_all_white
+                get_all_white-=position
+                index = position.bit_length() - 1
+                #row = index // 8
+                #col = index % 8
+                only_white = 1 << index
+                if not only_white&white_confirmed:
+                    all_white.append(only_white)
+                #(列(上から),行(左から))のタプルの配列に変換
+                #all_white = list(zip(all_white[0], all_white[1]))
+        #print(all_white)
+
+        get_all_black = board_b
+        all_black = []
+        while get_all_black:
+                position = get_all_black & -get_all_black
+                index = position.bit_length() - 1
+                get_all_black-=position
+                row = index // 8
+                col = index % 8
+                #print(row,col)
+                only_black = 1 << index
+                if not only_black&black_confirmed:
+                    all_black.append(only_black)
+                #(列(上から),行(左から))のタプルの配列に変換
+                #all_white = list(zip(all_white[0], all_white[1]))
+        for only_white in reversed(all_white):
+                if not only_white & white_confirmed:#この石がまだ確定石判定を受けていなかったら
+                    #print("マダ")
+                    #index = only_black.bit_length() - 1
+                    #row = index // 8
+                    #col = index % 8
+                    #print(row,col)
+                    check_list = []
+                    now_bit = only_white
+                    for direction in DIRECTIONS:
+                        #nx,ny = wx,wy
+                        #result = get_color_direction_color(board,nx,ny,dx,dy,0)
+                        now_bit = only_white
+                        shifted = shift_board(now_bit,direction)
+                        if (direction in [-1,7,-9]) and direction != 8:
+                            shifted_masked = shifted & LEFT_MASK
+                        elif (direction in [1,-7,9]) and direction != -8:
+                            shifted_masked = shifted & RIGHT_MASK
+                        else:
+                            shifted_masked = shifted
+                        adjust_board_w = shifted_masked & board_w
+                        adjust_board_b = shifted_masked & board_b
+                        """ if abs(direction) == 9:
+                            print(direction)
+                            print(bitboard_to_numpy(0,now_bit))
+                            print(bitboard_to_numpy(0,shifted))
+                            print(shifted&~LEFT_MASK) """
+                        if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
+                            #print("w")
+                            #print(direction)
+                            if abs(direction) == 8:#上下方向の移動なら
+                                #print(6)
+                                check_list.append(6)
+                            elif abs(direction) == 1:
+                                check_list.append(5)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(7)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(8)
+                        elif (shifted_masked == 0) or (shifted_masked.bit_length() > 64) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
+                            """ print("壁or同じ色の確定石")
+                            print("同じ色の確定石：",white_confirmed & adjust_board_w)
+                            print(direction)
+                            if direction == 1:
+                                print(bitboard_to_numpy(shifted&~RIGHT_MASK&0xFFFFFFFFFFFFFFFF,0))
+                                print(shifted.bit_length()) """
+                            #print(black_confirmed & adjust_board_b)
+                            #print("b")
+                            #print(direction)
+                            
+                            if abs(direction) == 8:#上下方向の移動なら
+                                check_list.append(2)
+                            elif abs(direction) == 1:
+                                check_list.append(1)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(3)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(4)
+                        #else:
+                            #print("u")
+                            #print(direction)
+                    #print("white")
+                    #print(check_list)
+                    #リストを変換するよ
+                    #print(check_list)
+                    for num in [5,6,7,8]:
+                        if check_list.count(num) == 2:
+                            check_list = [x for x in check_list if x != num]#その値を全て削除
+                            check_list.append(num-4)
+                    
+                    if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
+                        confirmed_all |= only_white
+                        white_confirmed |= only_white
+        for only_black in reversed(all_black):
+                if not only_black & black_confirmed:#この石がまだ確定石判定を受けていなかったら
+                    #index = only_black.bit_length() - 1
+                    #row = index // 8
+                    #col = index % 8
+                    #print(row,col)
+                    check_list = []
+                    now_bit = only_black
+                    for direction in DIRECTIONS:
+                        #nx,ny = wx,wy
+                        #result = get_color_direction_color(board,nx,ny,dx,dy,0)
+                        now_bit = only_black
+                        shifted = shift_board(now_bit,direction)
+
+                        if (direction in [-1,7,-9]) and direction != 8:
+                            shifted_masked = shifted & LEFT_MASK
+                        elif (direction in [1,-7,9]) and direction != -8:
+                            shifted_masked = shifted & RIGHT_MASK
+                        else:
+                            shifted_masked = shifted
+                        adjust_board_w = shifted_masked & board_w
+                        adjust_board_b = shifted_masked & board_b
+                        
+                        """ print(direction)
+                        print(bitboard_to_numpy(0,shifted))
+                        print(bitboard_to_numpy(0,shifted_masked)) """
+                            #print(shifted&~LEFT_MASK)
+                        if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
+                            #print("w")
+                            #print(direction)
+                            if abs(direction) == 8:#上下方向の移動なら
+                                #print(6)
+                                check_list.append(6)
+                            elif abs(direction) == 1:
+                                check_list.append(5)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(7)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(8)
+                        elif (shifted_masked == 0) or shifted_masked.bit_length() > 64  or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
+                            #print(black_confirmed & adjust_board_b)
+                            #print("b")
+                            #print(direction)
+                            
+                            if abs(direction) == 8:#上下方向の移動なら
+                                check_list.append(2)
+                            elif abs(direction) == 1:
+                                check_list.append(1)
+                            elif direction == -7 or direction == 7:#右上左下方向の移動なら
+                                #print("種類3")
+                                check_list.append(3)
+                            elif direction == -9 or direction == 9:#右下左上方向の移動なら
+                                check_list.append(4)
+                        #else:
+                            #print("u")
+                            #print(direction)
+                    #print(check_list)
+                    #リストを変換するよ
+                    for num in [5,6,7,8]:
+                        if check_list.count(num) == 2:
+                            check_list = [x for x in check_list if x != num]#その値を全て削除
+                            check_list.append(num-4)
+                    
+                    if (1 in check_list) and (2 in check_list) and (3 in check_list) and (4 in check_list):
+                        confirmed_all |= only_black
+                        black_confirmed |= only_black
     return white_confirmed,black_confirmed
+    
+    
 
 
 scores = np.array([
@@ -1057,7 +805,7 @@ m2_c = 0x8000000000000080
 m_e_list = [m1_e,m2_e,m3_e,m4_e]
 m_c_list = [m1_c,m2_c,m3_c,m4_c]
 
-def evaluate_board(board_w,board_b):
+def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     con_weight = 4
     empty = ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF
     turn = 64 - empty.bit_count()
@@ -1226,7 +974,7 @@ def evaluate_board(board_w,board_b):
         score = sum(sum(board * scores_fin)) """
     #print("score",board)
 
-    w_c,b_c = get_confirmed_stones(board_w,board_b)
+    w_c,b_c = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
     w_c,b_c = w_c.bit_count(),b_c.bit_count()
     con_score = (w_c - b_c)
     """ print(board_score)
@@ -1272,26 +1020,34 @@ def rotate90(board):
 
 
 # すでに探索した盤面を保存する（トランスポジションテーブル）
-def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,other_score=False,stop_queue=None):
+def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,other_score=False,stop_queue=None,last_con_w=0,last_con_b=0):
     #board1 = board.copy()
     #print("-------depth---------",depth)
     #print(is_terminal(board1))
-    if depth == 0 or is_terminal(board_w,board_b):    #ここが葉ノードなら
+    white_legal_list=get_legal_square("white",board_w,board_b)
+    black_legal_list=get_legal_square("black",board_w,board_b)
+    if depth == 0 or is_terminal(board_w,board_b) or (white_legal_list==[] and black_legal_list==[]):    #ここが葉ノードなら
         #print("-----葉ノード-----")
-        score = evaluate_board(board_w,board_b)
+        score = evaluate_board(board_w,board_b,last_con_w,last_con_b)
         #if score == float("inf"):
             #print("inf")
             #print(board1)
 
         return score, None  # 盤面評価値を返す
+    con_w,con_b = 0,0
+    if depth==4:
+        con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
     #print("board",board1)
     other_scores = {}
     if maximizing_player:
         #print("aTrue")
-        legal_list=get_legal_square("white",board_w,board_b)
+        legal_list=white_legal_list
         #legal_list = sorted(legal_list,key=lambda x:new_board_and_eval(x,board1.copy(),"white"),reverse=True)
         if legal_list == []:
-            return minimax(board_w,board_b,depth-1,alpha,beta,False,boardhash,stop_queue=stop_queue)
+            #con_w,con_b = 0,0
+            #con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
+            
+            return minimax(board_w,board_b,depth,alpha,beta,False,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
         max_eval = float('-inf')
         best_move = None
         for move in legal_list:
@@ -1311,7 +1067,10 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
                 #    print(new_board)
                 #    print(depth-1)
             new_board_w,new_board_b,flip_list = identify_flip_stone("white",board_w,board_b,move_string,mode=2)
-            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,False,None,stop_queue=stop_queue)
+            #con_w,con_b = 0,0
+            #if depth<0:
+            #    con_w,con_b = get_confirmed_stones(new_board_w,new_board_b,0,last_con_w,last_con_b)
+            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,False,None,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
             #print("score:",eval)
             if stop_queue != None:
                 if not stop_queue.empty():
@@ -1331,14 +1090,17 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
         return max_eval,best_move
     else:
         #print("aFalse")
-        legal_list=get_legal_square("black",board_w,board_b)
+        legal_list=black_legal_list
         #legal_list = sorted(legal_list,key=lambda x:new_board_and_eval(x,board1.copy(),"black"),reverse=False)
         min_eval = float('inf')
         best_move = None
         #evals = []
         evals_c = []
         if legal_list == []:
-            return minimax(board_w,board_b,depth-1,alpha,beta,True,boardhash,stop_queue=stop_queue)
+            #if depth<0:
+            #    con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
+            #con_w,con_b = 0,0
+            return minimax(board_w,board_b,depth,alpha,beta,True,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
 
         for move in legal_list:
             if stop_queue != None:
@@ -1353,7 +1115,11 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
             #print(a)
             
             #print("new",new_board)
-            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,True,None,stop_queue=stop_queue)
+            #con_w,con_b = get_confirmed_stones(new_board_w,new_board_b,0,last_con_w,last_con_b)
+            #con_w,con_b = 0,0
+            #if depth<0:
+            #    con_w,con_b = get_confirmed_stones(new_board_w,new_board_b,0,last_con_w,last_con_b)
+            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,True,None,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
             if stop_queue != None:
                 if not stop_queue.empty():
                     return None,None
@@ -1414,7 +1180,7 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
 
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #print(score_flat.shape)
     #print(score_flat)
     #mode1 = input("手入力->0,ランダムで記録->1,棋譜を入力して盤面再現->2,AI(黒)vsRandom->3,AI(白)vsRandom->4を入力:")
@@ -1480,16 +1246,27 @@ if __name__ == "__main__":
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]) """
     """ b = np.array([
-            [ 1,-1 ,  0,  0,  0,  1,  1,  0],
-            [ 0, 0 ,  0,  0,  1,  1, -1,  1],
-            [ 0, 0 ,  0, -1,  1,  0,  1,  1],
-            [ 0, 0 ,  0,  1,  1,  1,  1, -1],
-            [ 0,-1 ,  0,  0,  0,  0,  0,  1],
-            [ 1,-1 ,  0,  0,  0, -1,  1,  1],
-            [ 1,-1 ,  0,  0,  0,  0, -1,  1],
-            [ 1, 1 ,  0,  0,  0,  0,  1,  0]]) """
-    #white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
-    #black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
+            [-1,-1 , -1,  1,  0, -1, -1, -1],
+            [ 1, 1 ,  1,  1,  1, -1, -1, -1],
+            [ 1, 1 , -1, -1, -1,  1, -1, -1],
+            [ 1, 1 , -1, -1, -1, -1,  1, -1],
+            [ 1, 1 ,  1,  1,  1,  1,  1, -1],
+            [ 1, 1 ,  0,  1,  1,  1,  1, -1],
+            [ 1, 0 ,  0,  0,  0,  0,  0, -1],
+            [ 0, 0 ,  0,  0,  0,  0,  0, -1]])
+    c = np.array([
+            [ 1, 1 ,  1,  0,  0,  0,  0, -1],
+            [ 1, 1 ,  0,  0,  0,  0,  0,  0],
+            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
+            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
+            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
+            [-1, 0 ,  0,  0,  0,  0,  0,  0],
+            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
+            [ 1,-1 , -1, -1, -1, -1, -1, -1]])
+    white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
+    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF """
+    #c_white = board_to_bitboard(c.copy(), 1)&0xFFFFFFFFFFFFFFFF
+    #c_black = board_to_bitboard(c.copy(), -1)&0xFFFFFFFFFFFFFFFF
     #print(white)
     #print(black)
     #t1 = time.time()
@@ -1497,16 +1274,24 @@ if __name__ == "__main__":
     #black = 4612266565940036096
     #print(bin(white))
     #print(bin(black))
-    #def a():
-    #    evaluate_board(white,black)
-    #print(timeit.timeit("a()",globals=globals(),number=500))
+    #print(bitboard_to_numpy(c_white,c_black))
+    """ def a():
+        #get_confirmed_stones(white,black,0,c_white,c_black)
+        #evaluate_board(white,black,c_white,c_black)
+        minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
+    print(timeit.timeit("a()",globals=globals(),number=1))
+    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)) """
+    #print(evaluate_board(white,black,c_white,c_black))
+    #wc,bc = get_confirmed_stones(white,black,0,c_white,c_black)
+    
+    #print(bitboard_to_numpy(wc,bc))
     #e = get_legal_square("white",white,black)
     #print(evaluate_board(b))
     #print(get_legal_square("black",white,black))
     #w,b = identify_flip_stone("black",white,black,"h8")
     #w_c,b_c  = get_confirmed_stones(white,black)
     #w_c2,b_c2 = w_c.bit_count(),b_c.bit_count()
-    #print(bitboard_to_numpy(w_c,0))
+    #print(bitboard_to_numpy(w_c,b_c))
     #e = evaluate_board(white,black)
     #print(e)
     #print(minimax(black,white,3,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
