@@ -784,7 +784,7 @@ scores = np.array([
     [-12, -15,  -3,  -3,  -3,  -3, -15, -12],
     [ 30, -12,   0,  -1,  -1,   0, -12,  30]
 ])#計-124
-score_flat = scores.flatten()
+score_flat = scores.flatten().tolist()
 
 cx_zone = [(0,1),(1,1),(1,0),(0,6),(1,7),(1,6),(6,0),(6,1),(7,1),(6,7),(7,6),(6,6)]
 c_zone = [(0,1),(0,6),(1,7),(6,7),(7,1),(7,6),(1,0),(6,0)]
@@ -804,9 +804,18 @@ m2_e = 0x0080808080808000
 m2_c = 0x8000000000000080
 m_e_list = [m1_e,m2_e,m3_e,m4_e]
 m_c_list = [m1_c,m2_c,m3_c,m4_c]
-
+def eval_bitboard_score(board_b, board_w, score_flat):
+    black_score = 0
+    white_score = 0
+    for i in range(64):
+        mask = 1 << i
+        if board_b & mask:
+            black_score += score_flat[i]
+        elif board_w & mask:
+            white_score += score_flat[i]
+    return black_score, white_score
 def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
-    con_weight = 4
+    con_weight = 5
     empty = ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF
     turn = 64 - empty.bit_count()
     #print("turn:",turn)
@@ -837,6 +846,7 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     zennmetu_keikoku = 0
     if board_w.bit_count() <= 2 and turn>=10:
         zennmetu_keikoku = -45
+    
 
     #1辺全部1色かつ角が相手にとられないなら加点
     edge_point_w = 0
@@ -956,17 +966,21 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     dis_num = (len(num_w)-w_cx) - (len(num_b)-b_cx)
     #score = (1-alpha) * dis_num + (1 - alpha) * np.sum(scores * board) *2.4 + alpha * np.sum(board) *1.5 *2.4
     # 黒の評価値（black_boardの位置にある評価値を合計）
-    black_score = np.sum(score_flat * ((board_b >> np.arange(64,dtype=object)) & 1))
+    #black_score = np.sum(score_flat * ((board_b >> np.arange(64,dtype=object)) & 1))
 
     # 白の評価値（white_boardの位置にある評価値を合計）
-    white_score = np.sum(score_flat * ((board_w >> np.arange(64,dtype=object)) & 1))
+    #white_score = np.sum(score_flat * ((board_w >> np.arange(64,dtype=object)) & 1))
+    black_score,white_score = eval_bitboard_score(board_b,board_w,score_flat)
     #print(white_score)
     #print(black_score)
     board_score = white_score - black_score
     b_snum = board_b.bit_count()
     w_snum = board_w.bit_count()
+    lose_keikoku = 0
+    if num_w == [] and num_b == [] and b_snum > w_snum:
+        lose_keikoku = -50
     #(合法手の差 + 盤面スコア)*1.1*(1-alpha)+alptha*(枚数差)*1.5
-    score = (1-alpha) * (dis_num +  board_score*110/100) + alpha * (w_snum-b_snum)*150/100
+    score = (1-alpha) * (dis_num +  board_score*110/100) + alpha * (w_snum-b_snum)*200/100
         #score = np.sum(board * scores)
         #print(score,np.sum(board)*1.5)
     """ else:
@@ -988,7 +1002,7 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     #print(con_score*con_weight)
     print(edge_point) """
     
-    return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku
+    return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku + lose_keikoku
 
 def new_board_and_eval(move,now_board,color):
     move_string = convert_n2l[move[1]]+str(move[0]+1)
@@ -1279,7 +1293,7 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
         #get_confirmed_stones(white,black,0,c_white,c_black)
         #evaluate_board(white,black,c_white,c_black)
         minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
-    print(timeit.timeit("a()",globals=globals(),number=1))
+    print(timeit.timeit("a()",globals=globals(),number=5))
     print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)) """
     #print(evaluate_board(white,black,c_white,c_black))
     #wc,bc = get_confirmed_stones(white,black,0,c_white,c_black)
