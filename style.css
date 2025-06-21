@@ -48,8 +48,8 @@ html, body {
 }
 .legal{
     position: absolute;
-    width: 25%;
-    height: 25%;
+    width: 30%;
+    height: 30%;
     border-radius: 100%;
     top: 50%;
     left: 50%;
@@ -69,7 +69,7 @@ html, body {
     background-color: rgb(122, 122, 122);
 }
 .legal_white{
-    background-color: rgb(167, 167, 167);
+    background:radial-gradient(rgba(0,0,0,0) 30%,rgb(167, 167, 167) 30%,rgb(167, 167, 167) 100%);
 }
 
 #over_wrap{

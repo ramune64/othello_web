@@ -815,7 +815,7 @@ def eval_bitboard_score(board_b, board_w, score_flat):
             white_score += score_flat[i]
     return black_score, white_score
 def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
-    con_weight = 4
+    con_weight = 5
     empty = ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF
     turn = 64 - empty.bit_count()
     #print("turn:",turn)
@@ -846,6 +846,7 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     zennmetu_keikoku = 0
     if board_w.bit_count() <= 2 and turn>=10:
         zennmetu_keikoku = -45
+    
 
     #1辺全部1色かつ角が相手にとられないなら加点
     edge_point_w = 0
@@ -975,8 +976,11 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     board_score = white_score - black_score
     b_snum = board_b.bit_count()
     w_snum = board_w.bit_count()
+    lose_keikoku = 0
+    if num_w == [] and num_b == [] and b_snum > w_snum:
+        lose_keikoku = -50
     #(合法手の差 + 盤面スコア)*1.1*(1-alpha)+alptha*(枚数差)*1.5
-    score = (1-alpha) * (dis_num +  board_score*110/100) + alpha * (w_snum-b_snum)*150/100
+    score = (1-alpha) * (dis_num +  board_score*110/100) + alpha * (w_snum-b_snum)*200/100
         #score = np.sum(board * scores)
         #print(score,np.sum(board)*1.5)
     """ else:
@@ -998,7 +1002,7 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     #print(con_score*con_weight)
     print(edge_point) """
     
-    return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku
+    return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku + lose_keikoku
 
 def new_board_and_eval(move,now_board,color):
     move_string = convert_n2l[move[1]]+str(move[0]+1)
