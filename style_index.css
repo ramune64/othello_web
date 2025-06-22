@@ -27,8 +27,8 @@ h1{
     }
     & img{
         display: block;
-        margin: auto;
-        width: 60%;
+        margin: 20px auto;
+        width: 75%;
     }
     & math.formula{
         font-size: 27pt;
