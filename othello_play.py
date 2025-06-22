@@ -1194,7 +1194,7 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
 
 
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
     #print(score_flat.shape)
     #print(score_flat)
     #mode1 = input("手入力->0,ランダムで記録->1,棋譜を入力して盤面再現->2,AI(黒)vsRandom->3,AI(白)vsRandom->4を入力:")
@@ -1259,7 +1259,7 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]) """
-    """ b = np.array([
+    b = np.array([
             [-1,-1 , -1,  1,  0, -1, -1, -1],
             [ 1, 1 ,  1,  1,  1, -1, -1, -1],
             [ 1, 1 , -1, -1, -1,  1, -1, -1],
@@ -1277,8 +1277,23 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
             [-1, 0 ,  0,  0,  0,  0,  0,  0],
             [ 1, 0 ,  0,  0,  0,  0,  0,  0],
             [ 1,-1 , -1, -1, -1, -1, -1, -1]])
+    b = np.array([#初期の盤面を表す配列
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 1,-1, 0, 0, 0],
+            [ 0, 0, 0,-1,-1,-1, 0, 0],
+            [ 0, 1, 1, 1, 1, 1, 1, 1],
+            [ 0, 0, 0, 0, 1, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 1, 0, 0]
+        ])
+            
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
-    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF """
+    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
+    print(evaluate_board(white,black))
+    w_c,b_c  = get_confirmed_stones(white,black)
+    print(bitboard_to_numpy(w_c,b_c))
+    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
     #c_white = board_to_bitboard(c.copy(), 1)&0xFFFFFFFFFFFFFFFF
     #c_black = board_to_bitboard(c.copy(), -1)&0xFFFFFFFFFFFFFFFF
     #print(white)
