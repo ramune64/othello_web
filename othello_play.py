@@ -73,7 +73,7 @@ def get_legal_square(player_color:str,current_board_w,current_board_b) -> list:
     #white_indexes = np.where(current_board == 1)
     empty = ~(current_board_b | current_board_w)& 0xFFFFFFFFFFFFFFFF
     while current_board_w:
-        position = current_board_w & -current_board_w#一番最後の1だけ探す
+        position = current_board_w & -current_board_w
         index = position.bit_length() - 1
         #row = index // 8
         #col = index % 8
@@ -226,8 +226,8 @@ def get_color_direction_color(board, x, y, dx, dy, last_color):
 def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
     """盤面における確定石の枚数を求める関数"""
     #n = len(board)  # 盤面のサイズ (8x8)
-    black_confirmed = last_con_b  # 黒石の確定石を記録する数
-    white_confirmed = last_con_w  # 白石の確定石を記録する数
+    black_confirmed = 0  # 黒石の確定石を記録する数
+    white_confirmed = 0  # 白石の確定石を記録する数
     #print(bitboard_to_numpy(last_con_w,last_con_b))
     confirmed_all = last_con_w | last_con_b
     corners = [(0,0),(0,7),(7,0),(7,7)]
@@ -293,6 +293,24 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                     last_color = -1
                 else:
                     break
+    #両角とそこに挟まれる辺の色が異なる場合、辺を確定石に。
+    for i in range(len(m_c_list)):
+        
+        #print(bitboard_to_numpy(m_c_list[i],0))
+        #print(bitboard_to_numpy(m_e_list[i],0))
+        white_c = board_w & m_c_list[i]
+        black_c = board_b & m_c_list[i]
+        black_e = board_b & m_e_list[i]
+        white_e = board_w & m_e_list[i]
+        if (white_c|black_c|black_e|white_e).bit_count() == 8:
+            black_e = board_b & m_e_list[i]
+            white_e = board_w & m_e_list[i]
+            black_confirmed |= black_e
+            confirmed_all |= black_e
+            white_confirmed |= white_e
+            confirmed_all |= white_e
+                
+        
     #print(queue)
     for s in queue:
         row, col ,origin_color = s
@@ -417,6 +435,9 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                     break
     #return white_confirmed,black_confirmed
     
+    
+
+
     #ここからは他の場所の確定石を数えていきます
 
     for k in range(2):
@@ -770,20 +791,18 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                         confirmed_all |= only_black
                         black_confirmed |= only_black
     return white_confirmed,black_confirmed
-    
-    
 
 
 scores = np.array([
-    [ 30, -12,   0,  -1,  -1,   0, -12,  30],
-    [-12, -15,  -3,  -3,  -3,  -3, -15, -12],
-    [  0,  -3,   0,  -1,  -1,   0,  -3,   0],
-    [ -1,  -3,  -1,  -1,  -1,  -1,  -3,  -1],
-    [ -1,  -3,  -1,  -1,  -1,  -1,  -3,  -1],
-    [  0,  -3,   0,  -1,  -1,   0,  -3,   0],
-    [-12, -15,  -3,  -3,  -3,  -3, -15, -12],
-    [ 30, -12,   0,  -1,  -1,   0, -12,  30]
-])#計-124
+    [ 30, -12,   0,  -1,  -1,   0, -12, 30],
+    [-12, -20,  -3,  -3,  -3,  -3, -20,-12],
+    [  0,  -3,   0,  -1,  -1,   0,  -3,  0],
+    [ -1,  -3,  -1,  -1,  -1,  -1,  -3, -1],
+    [ -1,  -3,  -1,  -1,  -1,  -1,  -3, -1],
+    [  0,  -3,   0,  -1,  -1,   0,  -3,  0],
+    [-12, -20,  -3,  -3,  -3,  -3, -20,-12],
+    [ 30, -12,   0,  -1,  -1,   0, -12, 30]
+])
 score_flat = scores.flatten().tolist()
 
 cx_zone = [(0,1),(1,1),(1,0),(0,6),(1,7),(1,6),(6,0),(6,1),(7,1),(6,7),(7,6),(6,6)]
@@ -814,14 +833,25 @@ def eval_bitboard_score(board_b, board_w, score_flat):
         elif board_w & mask:
             white_score += score_flat[i]
     return black_score, white_score
-def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
-    con_weight = 5
+def evaluate_board(board_w,board_b,true_pass=0,false_pass=0):
+    con_weight = 100
     empty = ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF
     turn = 64 - empty.bit_count()
     #print("turn:",turn)
-    alpha = max(0, (turn - 40) / 20)  # 40手目以降、徐々に石の数を重視
+    alpha = min(max(0, (turn - 35) / 20),1)  # 40手目以降、徐々に石の数を重視
     num_w = get_legal_square("white",board_w,board_b)
     num_b = get_legal_square("black",board_w,board_b)
+    #legal_base_point = 15
+    #w_legal_point = legal_base_point*len(num_w)
+    #b_legal_point = legal_base_point*len(num_b)
+    """ for w in num_w:
+        idx = 63-(w[0]*8+w[1])
+        w_legal_point += score_flat[idx]
+    for b in num_b:
+        idx = 63-(b[0]*8+b[1])
+        b_legal_point += score_flat[idx]
+    total_legal_point = w_legal_point - b_legal_point """
+    #print(total_legal_point)
     """ if board[0,0] != 1:
         w_cx0 = sum(x in cx_zone0 for x in num_w)
     elif board[0,0] != -1:
@@ -867,6 +897,7 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
             fix_num = s[1] """
         #白について実行
         w_num = 0
+        b_num = 0
         w_num = (board_w&m_e_list[idx//2]).bit_count()
 
         b_num = (board_b&m_e_list[idx//2]).bit_count()
@@ -924,6 +955,8 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
             edge_point_w -= dec_point
             dec_point = 0
             add_point = 0
+        if b_num == 0:
+            edge_point_w += w_num*con_weight*1/20
 
         if b_num == 6:
             c = [0,0]
@@ -958,12 +991,17 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
                     #加点の対象
                     add_point += 10*6*con_weight* 4/5/10
         edge_point_b += add_point - dec_point
+        if w_num==0:
+            edge_point_b += b_num*con_weight*1/20
 
     edge_point = edge_point_w - edge_point_b
+    #edge_point = 0
 
 
     #b_corner = sum(x in corner for x in num_b)
-    dis_num = (len(num_w)-w_cx) - (len(num_b)-b_cx)
+    dis_num = (len(num_w)) - (len(num_b)) - w_cx + b_cx
+    """ if num_b == [] and num_w != []:
+    """
     #score = (1-alpha) * dis_num + (1 - alpha) * np.sum(scores * board) *2.4 + alpha * np.sum(board) *1.5 *2.4
     # 黒の評価値（black_boardの位置にある評価値を合計）
     #black_score = np.sum(score_flat * ((board_b >> np.arange(64,dtype=object)) & 1))
@@ -973,14 +1011,19 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     black_score,white_score = eval_bitboard_score(board_b,board_w,score_flat)
     #print(white_score)
     #print(black_score)
-    board_score = white_score - black_score
+    board_score = white_score - black_score*1.5
     b_snum = board_b.bit_count()
     w_snum = board_w.bit_count()
     lose_keikoku = 0
     if num_w == [] and num_b == [] and b_snum > w_snum:
-        lose_keikoku = -50
+        lose_keikoku = -100
+    pass_bonus = false_pass-true_pass
+    if pass_bonus != 0:print(pass_bonus)
+    """ if num_b != [] and num_w == []:
+        lose_keikoku-=300 """
     #(合法手の差 + 盤面スコア)*1.1*(1-alpha)+alptha*(枚数差)*1.5
-    score = (1-alpha) * (dis_num +  board_score*110/100) + alpha * (w_snum-b_snum)*200/100
+    score = (1-alpha) * (dis_num*300/100 +  board_score*200/100) + alpha * ((w_snum-b_snum)*700/100+(len(num_w)-len(num_b))*400/100)
+    #print(alpha)
         #score = np.sum(board * scores)
         #print(score,np.sum(board)*1.5)
     """ else:
@@ -988,9 +1031,10 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
         score = sum(sum(board * scores_fin)) """
     #print("score",board)
 
-    w_c,b_c = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
+    w_c,b_c = get_confirmed_stones(board_w,board_b)
     w_c,b_c = w_c.bit_count(),b_c.bit_count()
     con_score = (w_c - b_c)
+    #print(con_score)
     """ print(board_score)
     print("con:",con_score)
     print("edge",edge_point)
@@ -1002,7 +1046,7 @@ def evaluate_board(board_w,board_b,last_con_w=0,last_con_b=0):
     #print(con_score*con_weight)
     print(edge_point) """
     
-    return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku + lose_keikoku
+    return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku + lose_keikoku + pass_bonus*70*alpha
 
 def new_board_and_eval(move,now_board,color):
     move_string = convert_n2l[move[1]]+str(move[0]+1)
@@ -1034,37 +1078,49 @@ def rotate90(board):
 
 
 # すでに探索した盤面を保存する（トランスポジションテーブル）
-def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,other_score=False,stop_queue=None,last_con_w=0,last_con_b=0):
+#zobristhash = zobrist_hash.ZobristHash()
+def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,other_score=False,stop_queue=None,true_pass=0,false_pass=0):
     #board1 = board.copy()
+    """ if boardhash == None:
+        boardhash = zobristhash.compute_hash(board_w,board_b) """
+    new_boardhash = None
     #print("-------depth---------",depth)
     #print(is_terminal(board1))
     white_legal_list=get_legal_square("white",board_w,board_b)
     black_legal_list=get_legal_square("black",board_w,board_b)
     if depth == 0 or is_terminal(board_w,board_b) or (white_legal_list==[] and black_legal_list==[]):    #ここが葉ノードなら
         #print("-----葉ノード-----")
-        score = evaluate_board(board_w,board_b,last_con_w,last_con_b)
+        score = evaluate_board(board_w,board_b,true_pass,false_pass)
         #if score == float("inf"):
             #print("inf")
             #print(board1)
 
         return score, None  # 盤面評価値を返す
-    con_w,con_b = 0,0
-    if depth==4:
-        con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
     #print("board",board1)
     other_scores = {}
     if maximizing_player:
         #print("aTrue")
         legal_list=white_legal_list
+        legal_list = sorted(legal_list)
         #legal_list = sorted(legal_list,key=lambda x:new_board_and_eval(x,board1.copy(),"white"),reverse=True)
         if legal_list == []:
-            #con_w,con_b = 0,0
-            #con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
-            
-            return minimax(board_w,board_b,depth,alpha,beta,False,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
+            return minimax(board_w,board_b,depth,alpha,beta,False,boardhash,stop_queue=stop_queue,true_pass=true_pass+1,false_pass=false_pass)
         max_eval = float('-inf')
         best_move = None
+        ab_breake = False
+        cache_list = []
+        move_oder_list = []
         for move in legal_list:
+            move_string = convert_act_bit2str(move)
+            new_board_w,new_board_b,flip_list = identify_flip_stone("white",board_w,board_b,move_string,mode=2)
+            #new_boardhash = zobristhash.update_hash(boardhash,move[0],move[1],0,1)
+            #for flip in flip_list:
+            #    new_boardhash = zobristhash.update_hash(new_boardhash,flip[0],flip[1],-1,1)#ひっくり返る石の処理
+            eval_d0,_ = minimax(new_board_w,new_board_b,0,alpha, beta,False,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+            move_oder_list.append((eval_d0,move,new_board_w,new_board_b,new_boardhash))
+        move_oder_list.sort(reverse=True)
+        legal_list = [(move,b_w,b_b,n_b) for _, move,b_w,b_b,n_b in move_oder_list]
+        for move,new_board_w,new_board_b,new_boardhash in legal_list:
             if stop_queue != None:
                 if not stop_queue.empty():
                     return None,None
@@ -1076,15 +1132,40 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
             #print("move",move_string)
             #print("depth",depth)
             #print("mae",board1)
-                #if eval == float('inf') or eval == float('-inf'):
-                #    print(eval)
-                #    print(new_board)
-                #    print(depth-1)
-            new_board_w,new_board_b,flip_list = identify_flip_stone("white",board_w,board_b,move_string,mode=2)
-            #con_w,con_b = 0,0
-            #if depth<0:
-            #    con_w,con_b = get_confirmed_stones(new_board_w,new_board_b,0,last_con_w,last_con_b)
-            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,False,None,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
+            #new_board_w,new_board_b,flip_list = identify_flip_stone("white",board_w,board_b,move_string,mode=2)
+            """ board_combined = bitboard_to_numpy(new_board_w, new_board_b)
+            print(board_combined) """
+            #print("new",new_board)
+            #new_boardhash = zobristhash.update_hash(boardhash,move[0],move[1],0,1)#新たに置かれた石の処理
+            #for flip in flip_list:
+            #    new_boardhash = zobristhash.update_hash(new_boardhash,flip[0],flip[1],-1,1)#ひっくり返る石の処理
+            #print(new_boardhash)
+            #new_boardhash = zobristhash.compute_hash(new_board_w, new_board_b)
+            #eval = zobristhash.get_saved_score(board_hash=new_boardhash,depth=depth-1,max_pl=False)
+            #print(eval)
+            eval = None
+            if eval != None:
+                #print(eval)
+                eval2 ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,False,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+                if eval != eval2:
+                    print("different")
+                pass
+                #print("既出や1")
+            else:
+                """ new_board_90_w,new_board_90_b = rotate90(new_board_w),rotate90(new_board_b)
+                boardhash_90 = zobristhash.compute_hash(new_board_90_w,new_board_90_b)
+                eval = zobristhash.get_saved_score(boardhash_90,depth-1,False)
+                if eval is None:
+                    new_board_180_w,new_board_180_b = rotate90(new_board_90_w),rotate90(new_board_90_b)
+                    boardhash_180 = zobristhash.compute_hash(new_board_180_w,new_board_180_b)
+                    eval = zobristhash.get_saved_score(boardhash_180,depth-1,False)
+                    if eval is None:
+                        new_board_270_w,new_board_270_b = rotate90(new_board_180_w),rotate90(new_board_180_b)
+                        boardhash_270 = zobristhash.compute_hash(new_board_270_w,new_board_270_b)
+                        eval = zobristhash.get_saved_score(boardhash_270,depth-1,False)
+                        if eval is None: """
+            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,False,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+            cache_list.append([new_boardhash,depth-1,False,eval])
             #print("score:",eval)
             if stop_queue != None:
                 if not stop_queue.empty():
@@ -1098,25 +1179,40 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
                 best_move = move_string
             alpha = max(alpha, eval)  # αを更新
             if beta <= alpha:  # αβ枝刈り
+                #print("α")
+                ab_breake = True
                 break
+        #if not ab_breake:
+            #for c in cache_list:
+                #zobristhash.save_score(board_hash=c[0],depth=c[1],max_pl=c[2],score=c[3])
         if other_score:
             return max_eval,best_move,other_scores
         return max_eval,best_move
     else:
         #print("aFalse")
         legal_list=black_legal_list
+        legal_list = sorted(legal_list)
         #legal_list = sorted(legal_list,key=lambda x:new_board_and_eval(x,board1.copy(),"black"),reverse=False)
         min_eval = float('inf')
         best_move = None
         #evals = []
         evals_c = []
         if legal_list == []:
-            #if depth<0:
-            #    con_w,con_b = get_confirmed_stones(board_w,board_b,0,last_con_w,last_con_b)
-            #con_w,con_b = 0,0
-            return minimax(board_w,board_b,depth,alpha,beta,True,boardhash,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
-
+            return minimax(board_w,board_b,depth,alpha,beta,True,boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass+1)
+        ab_breake = False
+        cache_list = []
+        move_oder_list = []
         for move in legal_list:
+            move_string = convert_act_bit2str(move)
+            new_board_w,new_board_b,flip_list = identify_flip_stone("black",board_w,board_b,move_string,mode=2)
+            #new_boardhash = zobristhash.update_hash(boardhash,move[0],move[1],0,1)
+            #for flip in flip_list:
+                #new_boardhash = zobristhash.update_hash(new_boardhash,flip[0],flip[1],-1,1)#ひっくり返る石の処理
+            eval_d0,_ = minimax(new_board_w,new_board_b,0,alpha, beta,True,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+            move_oder_list.append((eval_d0,move,new_board_w,new_board_b,new_boardhash))
+        move_oder_list.sort()
+        legal_list = [(move,b_w,b_b,n_b) for _, move,b_w,b_b,n_b in move_oder_list]
+        for move,new_board_w,new_board_b,new_boardhash in legal_list:
             if stop_queue != None:
                 if not stop_queue.empty():
                     return None,None
@@ -1125,15 +1221,45 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
             #print("move",move_string)
             #print("depth",depth)
             #print("mae",board1)
-            new_board_w,new_board_b,flip_list = identify_flip_stone("black",board_w,board_b,move_string,mode=2)
+            #new_board_w,new_board_b,flip_list = identify_flip_stone("black",board_w,board_b,move_string,mode=2)
             #print(a)
             
             #print("new",new_board)
-            #con_w,con_b = get_confirmed_stones(new_board_w,new_board_b,0,last_con_w,last_con_b)
-            #con_w,con_b = 0,0
-            #if depth<0:
-            #    con_w,con_b = get_confirmed_stones(new_board_w,new_board_b,0,last_con_w,last_con_b)
-            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,True,None,stop_queue=stop_queue,last_con_w=con_w,last_con_b=con_b)
+            #new_boardhash = zobristhash.update_hash(boardhash,move[0],move[1],0,-1)#新たに置かれた石の処理
+            #for flip in flip_list:
+            #    new_boardhash = zobristhash.update_hash(new_boardhash,flip[0],flip[1],1,-1)#ひっくり返る石の処理
+            
+            #new_boardhash = zobristhash.compute_hash(new_board_w, new_board_b)
+            #eval = zobristhash.get_saved_score(board_hash=new_boardhash,depth=depth-1,max_pl=True)
+            #print(eval)
+            eval = None
+            if eval != None:
+                #print(eval)
+                #eval2 ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,True,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+                #if eval != eval2:
+                #    print(new_board_w,new_board_b)
+                #    print("different2")
+
+                pass
+                #print("既出や1")
+            else:
+                """ new_board_90_w,new_board_90_b = rotate90(new_board_w),rotate90(new_board_b)
+                boardhash_90 = zobristhash.compute_hash(new_board_90_w,new_board_90_b)
+                eval = zobristhash.get_saved_score(boardhash_90,depth-1,True)
+                if eval is None:
+                    new_board_180_w,new_board_180_b = rotate90(new_board_90_w),rotate90(new_board_90_b)
+                    boardhash_180 = zobristhash.compute_hash(new_board_180_w,new_board_180_b)
+                    eval = zobristhash.get_saved_score(boardhash_180,depth-1,True)
+                    if eval is None:
+                        new_board_270_w,new_board_270_b = rotate90(new_board_180_w),rotate90(new_board_180_b)
+                        boardhash_270 = zobristhash.compute_hash(new_board_270_w,new_board_270_b)
+                        eval = zobristhash.get_saved_score(boardhash_270,depth-1,True)
+                        if eval is None: """
+            eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,True,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+            cache_list.append([new_boardhash,depth-1,True,eval])
+            #評価値と盤面の対応を保存
+            """ if new_board_w==4684619928605818880  and new_board_b==9659097628700567490:
+                print(depth-1, True,new_boardhash,eval,"保存") """
             if stop_queue != None:
                 if not stop_queue.empty():
                     return None,None
@@ -1146,6 +1272,8 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
                 best_move = move_string
             beta = min(beta, eval)  # αを更新
             if beta <= alpha:  # αβ枝刈り
+                #print("β")
+                ab_breake = True
                 break
         #if min_eval == float("inf"):
             #print("min")
@@ -1153,6 +1281,9 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
             #print(evals)
             #print(evals_c)
             #print(legal_list)
+        #if not ab_breake:
+            #for c in cache_list:
+                #zobristhash.save_score(board_hash=c[0],depth=c[1],max_pl=c[2],score=c[3])
         if other_score:
             return min_eval,best_move,other_scores
         return min_eval,best_move
@@ -1250,63 +1381,72 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]) """
     """ b = np.array([#初期の盤面を表す配列
-            [0, 1, 1, 1, 1, 1, 1, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0,-1, 0, 1, 0, 0],
-            [0, 0, 0,-1,-1, 0, 0, 0],
-            [0, 0, 1, 1,-1, 0, 0, 0],
-            [0, 0, 0, 0, 0,-1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0]
-        ]) """
-    """ b = np.array([
-            [-1,-1 , -1,  1,  0, -1, -1, -1],
-            [ 1, 1 ,  1,  1,  1, -1, -1, -1],
-            [ 1, 1 , -1, -1, -1,  1, -1, -1],
-            [ 1, 1 , -1, -1, -1, -1,  1, -1],
-            [ 1, 1 ,  1,  1,  1,  1,  1, -1],
-            [ 1, 1 ,  0,  1,  1,  1,  1, -1],
-            [ 1, 0 ,  0,  0,  0,  0,  0, -1],
-            [ 0, 0 ,  0,  0,  0,  0,  0, -1]])
-    c = np.array([
-            [ 1, 1 ,  1,  0,  0,  0,  0, -1],
-            [ 1, 1 ,  0,  0,  0,  0,  0,  0],
-            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
-            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
-            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
-            [-1, 0 ,  0,  0,  0,  0,  0,  0],
-            [ 1, 0 ,  0,  0,  0,  0,  0,  0],
-            [ 1,-1 , -1, -1, -1, -1, -1, -1]])
-    white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
-    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF """
-    #c_white = board_to_bitboard(c.copy(), 1)&0xFFFFFFFFFFFFFFFF
-    #c_black = board_to_bitboard(c.copy(), -1)&0xFFFFFFFFFFFFFFFF
-    #print(white)
-    #print(black)
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1,-1],
+            [1, 0, 0,-1, 1, 1, 1,-1],
+            [1, 0, 0,-1,-1, 1, 1,-1],
+            [1, 0, 1, 1,-1, 1, 1,-1],
+            [1, 0, 0, 0, 0,-1, 1,-1],
+            [1, 1, 1, 1, 1, 1, 1,-1],
+            [1, 1, 1, 1, 0,-1,-1,-1]
+        ])
+    b = np.array([#初期の盤面を表す配列
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 1,-1, 0, 0, 0],
+            [ 0, 0, 0,-1,-1,-1, 0, 0],
+            [ 0, 1, 1, 1, 1, 1, 1, 1],
+            [ 0, 0, 0, 0, 1, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 1, 0, 0]
+        ])
+    b = np.array([
+            [ 1, -1, -1, -1, -1, -1,  1,  1],
+            [-1,  0,  0,  0,  1,  1,  1,  1],
+            [-1,  0,  0, -1,  1,  0,  1,  1],
+            [-1,  0,  0,  1,  1,  1,  1, -1],
+            [-1, -1,  0,  0,  0,  0,  0, -1],
+            [-1, -1,  0,  0,  0, -1,  1, -1],
+            [-1, -1,  0,  0,  0,  0, -1, -1],
+            [ 1, -1, -1, -1, -1, -1, -1,  1]]) """
+    """ b = np.array([#初期の盤面を表す配列
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1,-1, 0, 0, 0],
+        [0, 0, 0,-1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0]
+    ]) """
+    """ white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
+    black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
+    white2=4684619928605818880
+    black2=9659097628700567490
+    print(white)
+    print(black)
+    print(get_legal_square("white",white,black))
     #t1 = time.time()
     #white = 9659388999281902018
     #black = 4612266565940036096
     #print(bin(white))
     #print(bin(black))
-    #print(bitboard_to_numpy(c_white,c_black))
-    """ def a():
-        #get_confirmed_stones(white,black,0,c_white,c_black)
-        #evaluate_board(white,black,c_white,c_black)
-        minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
-    print(timeit.timeit("a()",globals=globals(),number=5))
-    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)) """
-    #print(evaluate_board(white,black,c_white,c_black))
-    #wc,bc = get_confirmed_stones(white,black,0,c_white,c_black)
-    
-    #print(bitboard_to_numpy(wc,bc))
+    #def a():
+    #    evaluate_board(white,black)
+    #print(timeit.timeit("a()",globals=globals(),number=500))
     #e = get_legal_square("white",white,black)
     #print(evaluate_board(b))
     #print(get_legal_square("black",white,black))
     #w,b = identify_flip_stone("black",white,black,"h8")
-    #w_c,b_c  = get_confirmed_stones(white,black)
+    w_c,b_c  = get_confirmed_stones(white,black)
     #w_c2,b_c2 = w_c.bit_count(),b_c.bit_count()
-    #print(bitboard_to_numpy(w_c,b_c))
-    #e = evaluate_board(white,black)
+    #print(bitboard_to_numpy(w_c,0))
+    print(bitboard_to_numpy(w_c,b_c))
+    print(w_c.bit_count(),b_c.bit_count())
+    #print(minimax(black,white,2,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    print(minimax(white2,black2,1,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    e = evaluate_board(white,black)
+    print(e) """
     #print(e)
     #print(minimax(black,white,3,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
     #t2 = time.time()
@@ -1315,20 +1455,24 @@ def bitboard_to_numpy(bitboard_w, bitboard_b):
     #print(bin(w_c))
     #print(w_c2,b_c2)
     
-    #f = 0xF0F0F0F00F0F0F0F
-    #f2 =0x00000000FFFFFFFF
-    #f3 = 0xF0F0F0F0F0F0F0F0
-    #f4 = 0x0000333300003333
-    #f5 = 0xCCCC0000CCCC0000
-    #f6 = 0x3333333333333333
-    #f7 = 0xCCCCCCCCCCCCCCCC
-    #f8 = 0x0055005500550055
-    #f9 = 0xAA00AA00AA00AA00
-    #f10 =0x5555555555555555 
-    #f11 =0xAAAAAAAAAAAAAAAA 
+    """ for i in range(len(m_c_list)):
+        print(bitboard_to_numpy(m_c_list[i],0))
+        print(bitboard_to_numpy(m_e_list[i],0)) """
 
-    #m1 = 0x0080808080808000
-    #m1 = 0x8000000000000080
+    """ f = 0xF0F0F0F00F0F0F0F
+    f2 =0x00000000FFFFFFFF
+    f3 = 0xF0F0F0F0F0F0F0F0
+    f4 = 0x0000333300003333
+    f5 = 0xCCCC0000CCCC0000
+    f6 = 0x3333333333333333
+    f7 = 0xCCCCCCCCCCCCCCCC
+    f8 = 0x0055005500550055
+    f9 = 0xAA00AA00AA00AA00
+    f10 =0x5555555555555555 
+    f11 =0xAAAAAAAAAAAAAAAA 
+
+    m1 = 0x0080808080808000
+    m1 = 0x8000000000000080 """
     #t2m = white
     #f = (t2&mask4_r)<<2|(t2&mask4_l)>>2#2*2左右ミラー
     #f = ((t2m&mask1)<<36|(t2m&mask1)>>36)|(t2m&(~mask1&safety_maask))
