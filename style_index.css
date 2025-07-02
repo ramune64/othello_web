@@ -87,7 +87,12 @@ h1{
         }
     }
 }
-
+#latest{
+    border: gray 4px solid;
+    background-color: white;
+    margin: auto;
+    width: 90%;
+}
 @media screen and (max-width: 600px) {
     h1{
         font-size: 16pt;
