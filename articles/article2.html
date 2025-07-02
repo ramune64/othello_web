@@ -6,6 +6,15 @@
     <link rel="stylesheet" href="../style.css" type="text/css">
     <link rel="stylesheet" href="../style_index.css" type="text/css">
     <script type="text/javascript" asyncsrc="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=MML_SVG"></script>
+    <meta property="og:image" content="articles/article2_imgs/thumb_article2.png">
+    <meta property="og:description" content="モンテカルロ木探索やそれに必要な木構造など、オセロアルゴリズムについて解説第2回">
+    <meta property="og:title" content="オセロのアルゴリズムに関して2">
+    <meta property="og:image:width" content="960">
+    <meta property="og:image:height" content="510">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://ramune64.github.io/othello_web/articles/article2.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@e_Coachi_AI">
     <title>オセロのアルゴリズムに関して2</title>
 </head>
 <body>
@@ -16,10 +25,10 @@
         <h1>オセロのアルゴリズムに関して</h1>
     </div>
     <div class="main_content">
-        <h2>第2回：モンテカルロ木探索</h2>
-        <p>
-            この記事では、前回説明を省略した「モンテカルロ木探索」の詳細や、探索アルゴリズムにおける「木」の概念、「モンテカルロ法」の問題点などを絡めて解説します。
+        <h2 id="theme">第2回：モンテカルロ木探索</h2>
+        <p id="intro">この記事では、前回説明を省略した「モンテカルロ木探索」の詳細や、探索アルゴリズムにおける「木」の概念、「モンテカルロ法」の問題点などを絡めて解説します。
         </p>
+        <img src="../articles/article2_imgs/thumb_article2.png" id="thumb_nail" alt="このページのサムネイル。「オセロのアルゴリズム解説　第一回　minimax法？モンテカルロ法？　そもそもアルゴリズムとは？　基本的な事項を解説！　と書いてある。">
         <h3 id="1">1.モンテカルロ法の問題点</h3>
         <p>
             基本的にモンテカルロ法では、着手可能手にそれぞれn回の試行を行う方式をとります。そのため、中盤の選択肢が膨らむ局面では試行回数が多くなり処理時間が長くなってしまうという問題があります。<br>

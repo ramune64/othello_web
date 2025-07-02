@@ -5,12 +5,21 @@
         
 
         <link rel="stylesheet" href="style.css" type="text/css">
+        <link rel="stylesheet" href="style_index.css" type="text/css">
         <!-- PyScript CSS -->
         <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
 
         <!-- PyScriptの読み込み -->
         <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
-
+    <meta property="og:image" content="imgs/thumb2.png">
+    <meta property="og:description" content="オセロコーチングアプリである、e-coach_AIに搭載されているオセロアルゴリズムと対戦をしたり、他の人と対戦することができるページです。対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。">
+    <meta property="og:title" content="オセロ with e-Coach_AI">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="384">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ramune64.github.io/othello_web/play_othello.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@e_Coachi_AI">
     <py-config>
         packages = ["numpy"]
         [[fetch]]
@@ -28,6 +37,7 @@
         loading.showModal();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <title>オセロ with e-coach_AI</title>
 </head>
     <body>
@@ -63,9 +73,10 @@
             js.minimax = minimax
             start_up()
         </py-script>
-        <h1>
-            オセロ～with e-Coach_AI～
-        </h1>
+        <div id="header">
+        <img src="imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo">
+        <h2 id="theme">オセロゲーム with e-Coach_AI</h2>
+    </div>
         <h1 id="calculating">計算中...</h1>
         <h1 id="whitch_color">黒のターン</h1>
         <section id="upper_space">
@@ -109,13 +120,27 @@
                 <div id="ad_space2" class="ad_space1"></div>
                 <div id="ad_space3" class="ad_space1"></div>
             </div>
-            <div id="overview">
+            <div id="overview" class="main_content">
                 <p style="font-size: 12pt;">
-                    オセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-coach_AI</u></b><br>
-                    に搭載されているオセロアルゴリズムと対戦ができるページとなっています。<br>
-                    アプリの概要は<a href="index.html">こちら</a>から、<br>
-                    アルゴリズムの概要は<a href="#">こちら</a>からご覧いただけます。
+                    <span id="intro">オセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-coach_AI</u></b><br>
+                    に搭載されているオセロアルゴリズムと対戦をしたり、他の人と対戦することができるページです。<br>対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。</span><br>
+                    アプリの概要はこちら↓から
                 </p>
+                <a href="index.html" target="_blank" class="same_domain">
+                    <div>
+                        <img src="" alt="リンク先のページのサムネイル画像">
+                        <section><h5></h5><p></p></section>
+                    </div>
+                </a>
+                <p style="font-size: 12pt;">
+                    アルゴリズムの概要はこちら↓からご覧いただけます。
+                </p>
+                <a href="./articles/article1.html" target="_blank" class="same_domain">
+                    <div>
+                        <img src="" alt="リンク先のページのサムネイル画像">
+                        <section><h5></h5><p></p></section>
+                    </div>
+                </a>
             </div>
             <div id="ad_space2_parent">
                 <div id="ad_space4" class="ad_space2"></div>
@@ -184,5 +209,6 @@
         </div>
         <!-- <button onclick="a()">aaaaaaa</button> -->
     <script src="./main.js"></script>
+    <script src="./article.js"></script>
     </body>
 </html>

@@ -33,6 +33,59 @@ h1{
     & math.formula{
         font-size: 27pt;
     }
+    & img#thumb_nail{
+        width: 95%;
+    }
+    & a{
+        text-align: left;
+        display: block;
+        text-decoration: none;
+        color: black;
+        min-width: 70%;
+        max-width: 90%;
+        min-height: 100px;
+        margin: auto;
+        background-color: white;
+        border: gray 4px solid;
+        box-shadow: gray 5px 5px 10px;
+        padding: 7px;
+        transition: 0.2s;
+        & div{
+            display: flex;
+            width: fit-content;
+            & img{
+                display: block;
+                margin: auto;
+                width: fit-content;
+                height: 120px;
+                margin-right: 10px;
+                border: black 3px solid;
+                transition: 0.2s;
+            }
+            & section{
+                & h5{
+                    font-size: 14pt;
+                    display: block;
+                    margin: 0;
+                    margin-bottom: 5px;
+                }
+                & p{
+                    display: block;
+                    margin: 0;
+                    font-size: 11pt;
+                }
+            }
+        }
+    }
+    & a:hover{
+        transform: translateX(-10px) translateY(-10px) scale(1.05);
+        box-shadow: gray 10px 10px 30px;
+        transition: 0.2s;
+        & img{
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+    }
 }
 
 @media screen and (max-width: 600px) {
@@ -60,6 +113,37 @@ h1{
         }
         & img{
             width: 90%;
+        }
+        & a{
+            width: 95%;
+            height: fit-content;
+            min-height: fit-content;
+            & div{
+                display: flex;
+                width: fit-content;
+                
+                & img{
+                    display: block;
+                    margin: auto;
+                    width: fit-content;
+                    height: 70px;
+                    margin-right: 10px;
+                    border: black 3px solid;
+                }
+                & section{
+                    & h5{
+                        font-size: 12pt;
+                        display: block;
+                        margin: 0;
+                        margin-bottom: 5px;
+                    }
+                    & p{
+                        display: block;
+                        margin: 0;
+                        font-size: 10pt;
+                    }
+                }
+            }
         }
     }
 }

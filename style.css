@@ -20,6 +20,11 @@ html, body {
     height: fit-content;
     border-bottom: 2px gray solid;
 }
+.sub_title{
+    display: block;
+    margin: auto;
+    text-align: center;
+}
 #othello_board{
     position: relative;
     background-color: rgb(36, 164, 26);
