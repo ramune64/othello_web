@@ -1468,7 +1468,7 @@ if __name__ == "__main__":
     #import time
     import timeit
     import random
-    print(timeit.timeit("progress_game(4)",globals=globals(),number=1))
+    #print(timeit.timeit("progress_game(4)",globals=globals(),number=1))
     #board = np.zeros((8, 8), dtype=int)
 
     """ b = np.array([
@@ -1538,7 +1538,7 @@ if __name__ == "__main__":
             [-1, -1,  0,  0,  0, -1,  1, -1],
             [-1, -1,  0,  0,  0,  0, -1, -1],
             [ 1, -1, -1, -1, -1, -1, -1,  1]]) """
-    """ b = np.array([#初期の盤面を表す配列
+    b = np.array([#初期の盤面を表す配列
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -1547,13 +1547,13 @@ if __name__ == "__main__":
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0]
-    ]) """
+    ])
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
     black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
     #white2=4684619928605818880
     #black2=9659097628700567490
-    #print(white)
-    #print(black)
+    print(white)
+    print(black)
     #print(get_legal_square("white",white,black))
     #t1 = time.time()
     #white = 9659388999281902018
