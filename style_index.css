@@ -1,0 +1,185 @@
+h1{
+    text-align: center;
+    font-size: 29pt;
+}
+nav{
+    width: fit-content;
+    margin-left: auto;
+    margin-right: 2%;
+    display: flex;
+    & a{
+        transform-origin: center center;
+        font-size: 15pt;
+        margin: 10px;
+        text-decoration: none;
+        color: black;
+        transform: rotateY(0deg);
+        transition: 0.5s;
+        background-color: white;
+        height: fit-content;
+        padding: 5px;
+    }
+    & a:hover{
+        transform-origin: center center;
+        transform: rotateY(360deg);
+        transition: 0.5s;
+        color: white;
+        background-color: black;
+    }
+}
+#head_nav{
+    display: flex;
+}
+.main_content{
+    margin: auto;
+    width: 50%;
+    & p,li{
+        font-size: 14pt;
+    }
+    & h2{
+        padding: 20px;
+        font-size: 22pt;
+        background-color: rgba(73, 199, 57, 0.517);
+        box-shadow: 3px 3px 15px black;
+    }
+    & h3{
+        font-size: 18pt;
+        padding: 20px;
+        background-color: rgba(128, 128, 128, 0.338);
+        border-left: 7px black solid;
+        border-right: 7px white solid;
+    }
+    & h4{
+        font-size: 16pt;
+        background: linear-gradient(rgba(0,0,0,0) 50%, rgb(111, 214, 195) 100%);
+    }
+    & img{
+        display: block;
+        margin: 20px auto;
+        width: 75%;
+    }
+    & math.formula{
+        font-size: 27pt;
+    }
+    & img#thumb_nail{
+        width: 95%;
+    }
+    & a{
+        text-align: left;
+        display: block;
+        text-decoration: none;
+        color: black;
+        min-width: 70%;
+        max-width: 90%;
+        min-height: 100px;
+        margin: 20px auto;
+        background-color: white;
+        border: gray 4px solid;
+        box-shadow: gray 5px 5px 10px;
+        padding: 7px;
+        transition: 0.2s;
+        & div{
+            display: flex;
+            width: fit-content;
+            & img{
+                display: block;
+                margin: auto;
+                width: fit-content;
+                height: 120px;
+                margin-right: 10px;
+                border: black 3px solid;
+                transition: 0.2s;
+            }
+            & section{
+                & h5{
+                    font-size: 14pt;
+                    display: block;
+                    margin: 0;
+                    margin-bottom: 5px;
+                }
+                & p{
+                    display: block;
+                    margin: 0;
+                    font-size: 11pt;
+                }
+            }
+        }
+    }
+    & a:hover{
+        transform: translateX(-10px) translateY(-10px) scale(1.05);
+        box-shadow: gray 10px 10px 30px;
+        transition: 0.2s;
+        & img{
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+    }
+}
+#latest{
+    border: gray 4px solid;
+    background-color: white;
+    margin: auto;
+    width: 90%;
+}
+@media screen and (max-width: 600px) {
+    h1{
+        font-size: 16pt;
+    }
+    #head_nav{
+        display: block;
+    }
+    .main_content{
+        width: 90%;
+        & p{
+            font-size: 11pt;
+        }
+        & li{
+            font-size: 11pt;
+        }
+        & h2{
+            font-size: 18pt;
+            padding: 10px;
+        }
+        & h3{
+            font-size: 16pt;
+            padding: 7px;
+        }
+        & h4{
+            font-size: 13pt;
+        }
+        & img{
+            width: 90%;
+        }
+        & a{
+            width: 95%;
+            height: fit-content;
+            min-height: fit-content;
+            & div{
+                display: flex;
+                width: fit-content;
+                
+                & img{
+                    display: block;
+                    margin: auto;
+                    width: fit-content;
+                    height: 70px;
+                    margin-right: 10px;
+                    border: black 3px solid;
+                }
+                & section{
+                    & h5{
+                        font-size: 12pt;
+                        display: block;
+                        margin: 0;
+                        margin-bottom: 5px;
+                    }
+                    & p{
+                        display: block;
+                        margin: 0;
+                        font-size: 10pt;
+                    }
+                }
+            }
+        }
+    }
+}
