@@ -1,5 +1,5 @@
 import numpy as np
-import othello_play_cython2
+#import othello_play_cython2
 
 class MyError(Exception):
     pass
