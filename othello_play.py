@@ -283,8 +283,8 @@ def get_color_direction_color(board, x, y, dx, dy, last_color):
 def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
     """盤面における確定石の枚数を求める関数"""
     #n = len(board)  # 盤面のサイズ (8x8)
-    black_confirmed = 0  # 黒石の確定石を記録する数
-    white_confirmed = 0  # 白石の確定石を記録する数
+    white_confirmed = 0  # 黒石の確定石を記録する数
+    black_confirmed = 0  # 白石の確定石を記録する数
     #print(bitboard_to_numpy(last_con_w,last_con_b))
     confirmed_all = white_confirmed | black_confirmed
     corners = [(0,0),(0,7),(7,0),(7,7)]
@@ -1507,8 +1507,18 @@ if __name__ == "__main__":
             [ 1, 0, 1, 1,-1, 1, 1,-1],
             [ 1, 0,-1, 0, 0,-1, 1,-1],
             [ 1, 1, 1, 1, 1, 1, 1,-1],
-            [ 0, 1, 1, 1,-1,-1,-1,-1]
+            [ 1, 1, 1, 1,-1,-1,-1,-1]
         ])
+    """ b = np.array([#初期の盤面を表す配列
+            [-1, 1, 1, 1, 1, 1, 1, 1],
+            [ 1, 0, 0, 0, 0, 0, 0,-1],
+            [ 1, 0, 0, 0, 0, 0, 0,-1],
+            [ 1, 0, 0, 0, 0, 0, 0,-1],
+            [ 1, 0, 0, 0, 0, 0, 0,-1],
+            [ 1, 0, 0, 0, 0, 0,-1,-1],
+            [ 1, 1, 1, 0, 0, 0,-1,-1],
+            [ 1, 1, 1, 1,-1,-1,-1,-1]
+        ]) """
     """ b = np.array([#初期の盤面を表す配列
             [ 0, 0, 0, 0, 0, 0, 0, 0],
             [ 0, 0, 0, 0, 0, 0, 0, 0],
@@ -1538,7 +1548,7 @@ if __name__ == "__main__":
             [-1, -1,  0,  0,  0, -1,  1, -1],
             [-1, -1,  0,  0,  0,  0, -1, -1],
             [ 1, -1, -1, -1, -1, -1, -1,  1]]) """
-    b = np.array([#初期の盤面を表す配列
+    """ b = np.array([#初期の盤面を表す配列
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -1547,13 +1557,16 @@ if __name__ == "__main__":
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0]
-    ])
+    ]) """
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
     black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
+    print(bitboard_to_numpy(68853694464,34628173824))
+    print(bitboard_to_numpy(18446322413156229360,282578800148751))
     #white2=4684619928605818880
     #black2=9659097628700567490
     print(white)
     print(black)
+    
     #print(get_legal_square("white",white,black))
     #t1 = time.time()
     #white = 9659388999281902018
@@ -1571,7 +1584,8 @@ if __name__ == "__main__":
     #w,b = identify_flip_stone("black",white,black,"a8",mode=0)
     #print(w,b)
     #print(bitboard_to_numpy(w,b))
-    #w_c,b_c  = get_confirmed_stones(white,black)
+    w_c,b_c  = get_confirmed_stones(white,black)
+    print(bitboard_to_numpy(w_c,b_c))
     #w_c2,b_c2 = w_c.bit_count(),b_c.bit_count()
     #print(bitboard_to_numpy(w_c,0))
     #print(bitboard_to_numpy(w_c,b_c))
