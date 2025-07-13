@@ -128,7 +128,7 @@ function update_turn(white_board,black_board){
     }
     if(current_color != colors[pl_color] && pl_color!=0){
         calculating_ele.style.display = "block";
-        console.log("block");
+        //console.log("block");
         //console.log("minimax");
         window.setTimeout(()=>{
             calculate_CPU(cpu_LV,current_color,white_board,black_board);
@@ -147,11 +147,76 @@ function update_turn(white_board,black_board){
         }
     }
 }
+async function callMinimax(white, black, lv, pl) {
+    const resultProxy = await run_minimax(white, black, lv, pl);
+    const result = resultProxy.toJs();  // ✅ Proxy を明示的にJSオブジェクトに変換
+
+    const { row, col, score } = result;
+    console.log("選ばれた手:", row, col, "評価値:", score);
+
+    return result;
+}
+
+let wasm_ready = false;
+let minimax_c = null;
+
+Module.onRuntimeInitialized = () => {
+    // WASMの関数をラップ（戻り値なし、引数10個）
+    minimax_c = Module.cwrap("minimax_split", null,
+        ["number","number","number", "number", "number", "number", "number",
+        "number", "number", "number", "number", "number"]);
+    wasm_ready = true;
+};
+async function runMinimax(board_w, board_b, lv, pl) {
+    if (!wasm_ready) {
+        console.warn("WASMまだ初期化されていません");
+        return;
+    }
+    const w_high = board_w >> BigInt(32);                  // 上位32bit
+    const w_low  = board_w & BigInt(0xFFFFFFFF);           // 下位32bit
+
+    const w_high_num = Number(w_high);
+    const w_low_num  = Number(w_low);
+
+    const b_high = board_b >> BigInt(32);                  // 上位32bit
+    const b_low  = board_b & BigInt(0xFFFFFFFF);           // 下位32bit
+
+    const b_high_num = Number(b_high);
+    const b_low_num  = Number(b_low);
+
+    const act_ptr = Module._malloc(8);    // 2 int
+    const score_ptr = Module._malloc(4);  // 1 float
+
+    console.log(w_high,w_low,b_high,b_low);
+
+    try {
+    if(pl==1){
+        await minimax_c(w_high_num,w_low_num, b_high_num,b_low_num, Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+    }else{
+        await minimax_c(b_high_num,b_low_num,w_high_num,w_low_num, Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+    }
+    }catch (error) {
+        console.error('Error:', error);
+    }
+    console.log("finish");
+
+    const row = Module.HEAP32[act_ptr >> 2];
+    const col = Module.HEAP32[(act_ptr >> 2) + 1];
+    const score = Module.HEAPF32[score_ptr >> 2];
+
+    Module._free(act_ptr);
+    Module._free(score_ptr);
+
+    console.log(`WASM minimax 結果: (${row}, ${col}), score=${score}`);
+    return { row, col, score };
+}
+
 
 function calculate_CPU(lv,current_color,white,black){
     calculating_ele.style.display = "block";
-    console.log("block");
+    //console.log("block");
     let act_str,_;
+    let row,col;
     //console.log(current_color,white,black);
     if(lv==0){
         const legals = get_legal_square(current_color,white,black).toJs();
@@ -160,23 +225,39 @@ function calculate_CPU(lv,current_color,white,black){
     }else{
         if(current_color=="white"){
             const result = minimax(white,black,Number(lv),alpha=-Infinity,beta=Infinity,maximizing_player=true).toJs();
+            
+            console.log("white");
+            
+                /* console.log(result2);
+                row = Number(result2.row);
+                col = Number(result2.col);
+                console.log(row,col);
+                act_str = convert_act_bit2str([row,col]);
+                console.log(act_str);
+                const place = act_str; */
+    
             [_,act_str] = result;
+            //[_,act_str] = result;
         }else{
             const result = minimax(black,white,Number(lv),alpha=-Infinity,beta=Infinity,maximizing_player=true).toJs();
+            console.log("black");
             [_,act_str] = result;
+            
+            //[_,act_str] = result;
         }
+        const place = act_str; 
+        record += place;
+        let flips;
+        const result = identify_flip_stone(current_color,current_white,current_black,place,2).toJs();
+        [current_white,current_black,flips] = result;
+        current_white = BigInt(current_white);
+        current_black = BigInt(current_black);
+        console.log("none");
+        calculating_ele.style.display = "none";
+        update_turn(current_white,current_black);
     }
     //console.log(act_str);
-    const place = act_str;
-    record += place;
-    let flips;
-    const result = identify_flip_stone(current_color,current_white,current_black,place,2).toJs();
-    [current_white,current_black,flips] = result;
-    current_white = BigInt(current_white);
-    current_black = BigInt(current_black);
-    console.log("none");
-    calculating_ele.style.display = "none";
-    update_turn(current_white,current_black);
+    
 }
 
 

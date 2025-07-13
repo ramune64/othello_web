@@ -8,7 +8,8 @@
         <link rel="stylesheet" href="style_index.css" type="text/css">
         <!-- PyScript CSS -->
         <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
-
+        <!-- <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script> -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- PyScriptの読み込み -->
         <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
     <meta property="og:image" content="imgs/thumb2.png">
@@ -17,7 +18,7 @@
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="384">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://ramune64.github.io/othello_web/play_othello.html">
+    <meta property="og:url" content="https://e-coach-ai.com/play_othello.html">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@e_Coachi_AI">
     <py-config>
@@ -29,15 +30,22 @@
     <style>
         #loading { outline: none; border: none; background: transparent }
     </style>
+    <script src="othello_logic.js"></script>
     <script type="module">
         const over_wrap = document.getElementById("over_wrap");
         const mode_button_parent = document.getElementById("mode_button_parent");
         const loading = document.getElementById('loading');
         addEventListener('py:ready', () => {loading.close();over_wrap.style.display="block";mode_button_parent.style.display="block";});
         loading.showModal();
+        
     </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script> -->
     
+    <!-- <script>
+        
+        
+        
+    </script> -->
     <title>オセロ with e-coach_AI</title>
 </head>
     <body>
@@ -50,6 +58,7 @@
             from js import start_up
             from pyscript import display
             import numpy as np
+            import asyncio
             from othello_play import *
             first_b = np.array([
                 [ 0, 0, 0, 0, 0, 0, 0, 0],
@@ -68,9 +77,13 @@
             #first_board = bitboard_to_numpy(white,black)
             #display(bin(first_white))
             #display(minimax(first_white,first_black,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+            
+            
+            js.convert_act_bit2str = convert_act_bit2str
             js.get_legal_square = get_legal_square
             js.identify_flip_stone = identify_flip_stone
             js.minimax = minimax
+            
             start_up()
         </py-script>
         <div id="head_nav">
@@ -155,6 +168,9 @@
                 <div id="ad_space6" class="ad_space2"></div>
             </div>
             <div id="fotter">
+                <a id="x" href="https://x.com/e_Coachi_AI" target="_blank">
+                    <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
+                </a>
                 <p>&copy; 2025 ЯAMUNE</p>
             </div>
         </div>

@@ -1,5 +1,9 @@
 import numpy as np
+from ctypes import *
 #import othello_play_cython2
+
+
+
 
 class MyError(Exception):
     pass
@@ -280,6 +284,32 @@ def get_color_direction_color(board, x, y, dx, dy, last_color):
     else:
         return "akan"
 
+def is_blocked_direction(white,black,direction,now_bit,con_white,con_black):
+    all_stone = (white|black)&safety_maask
+    all_con = (con_white|con_black)&safety_maask
+    t = now_bit
+
+    while True:
+        t = shift_board(t,direction)
+        if  direction == -1 or direction == 7 or direction == -9:
+            t &= LEFT_MASK&safety_maask
+        elif direction == 1 or direction == -7 or direction == 9:
+            t &= RIGHT_MASK&safety_maask
+        
+
+
+        if t==0:
+            return 1
+        if (t & all_stone) == 0:
+            return 0
+        if t & all_con:
+            return 1
+        
+    
+
+
+
+
 def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
     """盤面における確定石の枚数を求める関数"""
     #n = len(board)  # 盤面のサイズ (8x8)
@@ -497,7 +527,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
 
     #ここからは他の場所の確定石を数えていきます
 
-    for k in range(2):
+    for k in range(3):
         all_white = []
         get_all_white = board_w
         while get_all_white:
@@ -541,9 +571,9 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                         #result = get_color_direction_color(board,nx,ny,dx,dy,0)
                         now_bit = only_white
                         shifted = shift_board(now_bit,direction)
-                        if (direction in [-1,7,-9]) and direction != 8:
+                        if (direction in [-1,7,-9]):
                             shifted_masked = shifted & LEFT_MASK
-                        elif (direction in [1,-7,9]) and direction != -8:
+                        elif (direction in [1,-7,9]):
                             shifted_masked = shifted & RIGHT_MASK
                         else:
                             shifted_masked = shifted
@@ -554,7 +584,13 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                             print(bitboard_to_numpy(0,now_bit))
                             print(bitboard_to_numpy(0,shifted))
                             print(shifted&~LEFT_MASK) """
-                        if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
+                        """ block = is_blocked_direction(board_w,board_b,direction,only_white,white_confirmed,black_confirmed)
+                        if block and only_white.bit_length()==52:
+                            print("------")
+                            print(block)
+                            print(only_white.bit_length(),direction)
+                            print("------") """
+                        if (black_confirmed & adjust_board_b) or is_blocked_direction(board_w,board_b,direction,only_white,white_confirmed,black_confirmed):#その方向が違う色の確定石なら
                             #print("w")
                             #print(direction)
                             if abs(direction) == 8:#上下方向の移動なら
@@ -567,7 +603,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                                 check_list.append(7)
                             elif direction == -9 or direction == 9:#右下左上方向の移動なら
                                 check_list.append(8)
-                        elif (shifted_masked == 0) or (shifted_masked.bit_length() > 64) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
+                        if (shifted_masked == 0) or (shifted_masked.bit_length() > 64) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
                             """ print("壁or同じ色の確定石")
                             print("同じ色の確定石：",white_confirmed & adjust_board_w)
                             print(direction)
@@ -587,6 +623,9 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                                 check_list.append(3)
                             elif direction == -9 or direction == 9:#右下左上方向の移動なら
                                 check_list.append(4)
+                        """ if only_white.bit_length()==52:
+                            print(check_list)
+                            print(direction) """
                         #else:
                             #print("u")
                             #print(direction)
@@ -634,7 +673,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                         print(bitboard_to_numpy(0,shifted))
                         print(bitboard_to_numpy(0,shifted_masked)) """
                             #print(shifted&~LEFT_MASK)
-                        if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
+                        if (white_confirmed & adjust_board_w) or is_blocked_direction(board_w,board_b,direction,only_black,white_confirmed,black_confirmed):#その方向が違う色の確定石なら
                             #print("w")
                             #print(direction)
                             if abs(direction) == 8:#上下方向の移動なら
@@ -647,7 +686,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                                 check_list.append(7)
                             elif direction == -9 or direction == 9:#右下左上方向の移動なら
                                 check_list.append(8)
-                        elif (shifted_masked == 0) or shifted_masked.bit_length() > 64  or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
+                        if (shifted_masked == 0) or shifted_masked.bit_length() > 64  or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
                             #print(black_confirmed & adjust_board_b)
                             #print("b")
                             #print(direction)
@@ -732,7 +771,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                             print(bitboard_to_numpy(0,now_bit))
                             print(bitboard_to_numpy(0,shifted))
                             print(shifted&~LEFT_MASK) """
-                        if black_confirmed & adjust_board_b:#その方向が違う色の確定石なら
+                        if (black_confirmed & adjust_board_b) or is_blocked_direction(board_w,board_b,direction,only_white,white_confirmed,black_confirmed):#その方向が違う色の確定石なら
                             #print("w")
                             #print(direction)
                             if abs(direction) == 8:#上下方向の移動なら
@@ -745,7 +784,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                                 check_list.append(7)
                             elif direction == -9 or direction == 9:#右下左上方向の移動なら
                                 check_list.append(8)
-                        elif (shifted_masked == 0) or (shifted_masked.bit_length() > 64) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
+                        if (shifted_masked == 0) or (shifted_masked.bit_length() > 64) or (white_confirmed & adjust_board_w) != 0 :#その方向が壁か同じ色の確定石なら
                             """ print("壁or同じ色の確定石")
                             print("同じ色の確定石：",white_confirmed & adjust_board_w)
                             print(direction)
@@ -807,7 +846,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                         print(bitboard_to_numpy(0,shifted))
                         print(bitboard_to_numpy(0,shifted_masked)) """
                             #print(shifted&~LEFT_MASK)
-                        if white_confirmed & adjust_board_w:#その方向が違う色の確定石なら
+                        if (white_confirmed & adjust_board_w) or is_blocked_direction(board_w,board_b,direction,only_black,white_confirmed,black_confirmed):#その方向が違う色の確定石なら
                             #print("w")
                             #print(direction)
                             if abs(direction) == 8:#上下方向の移動なら
@@ -820,7 +859,7 @@ def get_confirmed_stones(board_w,board_b,mode=0,last_con_w=0,last_con_b=0):
                                 check_list.append(7)
                             elif direction == -9 or direction == 9:#右下左上方向の移動なら
                                 check_list.append(8)
-                        elif (shifted_masked == 0) or shifted_masked.bit_length() > 64  or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
+                        if (shifted_masked == 0) or shifted_masked.bit_length() > 64  or (black_confirmed & adjust_board_b) :#その方向が壁か同じ色の確定石なら
                             #print(black_confirmed & adjust_board_b)
                             #print("b")
                             #print(direction)
@@ -995,16 +1034,20 @@ def evaluate_board(board_w,board_b,true_pass=0,false_pass=0):
             #elif c1 != c2 and c1 != 0 and c2 != 0:
             #    pass#減点なし
             c1,c2 = c
+            dec=0
             if c1 != c2 and ((c1 == 0 and c2 == -1) or (c1 == -1 and c2 == 0)):#角に敵の石が既にあるとき
                 #減点の対象
                 #print("角に敵の石が既にあるとき")
                 dec_point += 10*6*con_weight* 4/5/10
+                dec=1
             #敵の合法手が角にある場合
             if corner[idx//2-4] in num_b or corner[idx//2+1-4] in num_b:
                 #print("敵の合法手が角にある場合")
                 #減点の対象
                 dec_point += 10*6*con_weight* 3/5/10
-            else:#ない場合
+                dec=1
+                #print("2:")
+            if dec==0:#ない場合
                 #加点の対象
                 #print("加点や！")
                 add_point += 10*6*con_weight* 4/5/10
@@ -1036,27 +1079,39 @@ def evaluate_board(board_w,board_b,true_pass=0,false_pass=0):
                 #    pass#減点なし
                 #elif c1 != c2 and c1 != 0 and c2 != 0:
                 #    pass#減点なし
-                c1,c2 = c
-                if c1 != c2 and ((c1 == 0 and c2 == 1) or (c1 == 1 and c2 == 0)):#角に敵の石が既にあるとき
-                    #減点の対象
-                    dec_point += 10*6*con_weight* 4/5/10
-                #敵の合法手が角にある場合
-                if corner[idx//2-4] in num_w or corner[idx//2+1-4] in num_w:
-                    #減点の対象
-                    dec_point += 10*6*con_weight* 3/5/10
-                else:#ない場合
-                    #加点の対象
-                    add_point += 10*6*con_weight* 4/5/10
-        edge_point_b += add_point - dec_point
+            c1,c2 = c
+            dec=0
+            if c1 != c2 and ((c1 == 0 and c2 == 1) or (c1 == 1 and c2 == 0)):#角に敵の石が既にあるとき
+                #減点の対象
+                dec_point += 10*6*con_weight* 4/5/10
+                #print("1:",10*6*con_weight* 4/5/10)
+                dec=1
+            #敵の合法手が角にある場合
+            if corner[idx//2-4] in num_w or corner[idx//2+1-4] in num_w:
+                #減点の対象
+                dec_point += 10*6*con_weight* 3/5/10
+                
+                #print("2:",10*6*con_weight* 3/5/10)
+                dec=1
+            if dec==0:#ない場合
+                #加点の対象
+                add_point += 10*6*con_weight* 4/5/10
+                #print("3:",10*6*con_weight* 4/5/10)
+                #print(bitboard_to_numpy(m_e_list[idx//2],0))
+        edge_point_b += add_point
+        edge_point_b -= dec_point
         if w_num==0:
             edge_point_b += b_num*con_weight*1/20
+            #print("num:",b_num*con_weight*1/20)
 
     edge_point = edge_point_w - edge_point_b
     #edge_point = 0
-
+    #print(edge_point_w,edge_point_b)
+    #print(edge_point)
 
     #b_corner = sum(x in corner for x in num_b)
     dis_num = (len(num_w)) - (len(num_b)) - w_cx + b_cx
+    #print((len(num_w)) , (len(num_b)) , w_cx , b_cx)
     """ if num_b == [] and num_w != []:
     """
     #score = (1-alpha) * dis_num + (1 - alpha) * np.sum(scores * board) *2.4 + alpha * np.sum(board) *1.5 *2.4
@@ -1092,16 +1147,18 @@ def evaluate_board(board_w,board_b,true_pass=0,false_pass=0):
     w_c,b_c = w_c.bit_count(),b_c.bit_count()
     con_score = (w_c - b_c)
     #print(con_score)
-    """ print(board_score)
-    print("con:",con_score)
-    print("edge",edge_point)
-    print("nomal:",score)
-    print("dis:",dis_num)
+    #print(board_score)
+    #print("con:",con_score)
+    #print("edge",edge_point)
+    #print("score:",score)
+    #print("dis_num:",dis_num)
+    #print("dis:",w_snum-b_snum)
+    #print((score*10 + con_score*con_weight*10 + edge_point*10)/10)
     #print(alpha)
-    print(zennmetu_keikoku)
+    #print(zennmetu_keikoku)
     #print(score)
     #print(con_score*con_weight)
-    print(edge_point) """
+    #print(edge_point)
     
     return  (score*10 + con_score*con_weight*10 + edge_point*10)/10 + zennmetu_keikoku + lose_keikoku + pass_bonus*90*alpha
 
@@ -1313,6 +1370,7 @@ def minimax(board_w,board_b,depth,alpha, beta,maximizing_player,boardhash=None,o
                         eval = zobristhash.get_saved_score(boardhash_270,depth-1,True)
                         if eval is None: """
             eval ,_ = minimax(new_board_w,new_board_b,depth-1,alpha, beta,True,new_boardhash,stop_queue=stop_queue,true_pass=true_pass,false_pass=false_pass)
+            #print("act:",move,"score:",eval)
             cache_list.append([new_boardhash,depth-1,True,eval])
             #評価値と盤面の対応を保存
             """ if new_board_w==4684619928605818880  and new_board_b==9659097628700567490:
@@ -1412,7 +1470,12 @@ def progress_game(game_nun = 10):
                 else:
                     continue
             if minimax_color == turn_color:
-                _,act = othello_play_cython2.minimax(boards[turn_color],boards[turn_color*-1],6,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
+                act = RowCol()
+                score = c_float()
+                lib.minimax(boards[turn_color],boards[turn_color*-1],2,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
+                act = convert_act_bit2str((act.row,act.col))
+                #print(act)
+                #_,act = othello_play_cython2.minimax(boards[turn_color],boards[turn_color*-1],6,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
             else:
                 act = random.choice(turn_legal)
                 act = convert_act_bit2str(act)
@@ -1443,6 +1506,22 @@ def progress_game(game_nun = 10):
 
 
 if __name__ == "__main__":
+    lib = CDLL("./othello_logic.dll")
+    class RowCol(Structure):
+        _fields_ = [("row", c_int), ("col", c_int)]
+    lib.minimax.argtypes = [
+        c_uint64,  # board_w
+        c_uint64,  # board_b
+        c_int,     # depth
+        c_float,   # alpha
+        c_float,   # beta
+        c_int,     # maximizing_player
+        c_int,     # true_pass
+        c_int,     # false_pass
+        POINTER(RowCol),  # RowCol* act
+        POINTER(c_float)  # float* score
+    ]
+    lib.minimax.restype = None
     #print(score_flat.shape)
     #print(score_flat)
     #mode1 = input("手入力->0,ランダムで記録->1,棋譜を入力して盤面再現->2,AI(黒)vsRandom->3,AI(白)vsRandom->4を入力:")
@@ -1468,7 +1547,7 @@ if __name__ == "__main__":
     #import time
     import timeit
     import random
-    #print(timeit.timeit("progress_game(4)",globals=globals(),number=1))
+    #print(timeit.timeit("progress_game(200)",globals=globals(),number=1))
     #board = np.zeros((8, 8), dtype=int)
 
     """ b = np.array([
@@ -1499,16 +1578,16 @@ if __name__ == "__main__":
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]) """
-    b = np.array([#初期の盤面を表す配列
+    """ b = np.array([#初期の盤面を表す配列
+            [ 0, 1, 1, 1, 1, 1, 1, 1],
             [-1, 1, 1, 1, 1, 1, 1, 1],
-            [ 1, 1, 1, 1, 1, 1, 1,-1],
-            [ 1, 0, 0,-1, 1, 1, 1,-1],
-            [ 1, 0, 0,-1,-1, 1, 1,-1],
-            [ 1, 0, 1, 1,-1, 1, 1,-1],
-            [ 1, 0,-1, 0, 0,-1, 1,-1],
-            [ 1, 1, 1, 1, 1, 1, 1,-1],
-            [ 1, 1, 1, 1,-1,-1,-1,-1]
-        ])
+            [-1, 1, 0,-1, 1, 1, 1, 1],
+            [-1, 1, 0,-1,-1, 1, 1,-1],
+            [-1, 1, 1, 1,-1, 1, 0, 1],
+            [-1, 1,-1, 0, 0,-1, 1, 1],
+            [-1, 1, 1, 1, 0, 1, 1, 1],
+            [ 0, 1, 1, 1,-1,-1,-1,-1]
+        ]) """
     """ b = np.array([#初期の盤面を表す配列
             [-1, 1, 1, 1, 1, 1, 1, 1],
             [ 1, 0, 0, 0, 0, 0, 0,-1],
@@ -1519,17 +1598,17 @@ if __name__ == "__main__":
             [ 1, 1, 1, 0, 0, 0,-1,-1],
             [ 1, 1, 1, 1,-1,-1,-1,-1]
         ]) """
-    """ b = np.array([#初期の盤面を表す配列
+    b = np.array([#初期の盤面を表す配列
             [ 0, 0, 0, 0, 0, 0, 0, 0],
             [ 0, 0, 0, 0, 0, 0, 0, 0],
             [ 0, 0, 0, 0, 0, 0, 0, 0],
             [ 0, 0, 0, 1,-1, 0, 0, 0],
             [ 0, 0, 0,-1,-1,-1, 1, 0],
-            [ 0, 1, 1, 1, 1, 1, 1, 1],
+            [ 0, 0, 1, 1, 1, 1, 1, 1],
             [ 0, 0, 0, 0, 1, 0, 0, 0],
             [ 0, 0, 0, 0, 0, 1, 0, 0]
         ])
-    b = np.array([#初期の盤面を表す配列
+    """ b = np.array([#初期の盤面を表す配列
             [ 0, 0, 0, 0, 0, 0, 0, 0],
             [ 0, 0, 1, 0, 0, 1, 0, 0],
             [ 1, 0,-1, 0,-1, 0, 0, 0],
@@ -1558,15 +1637,31 @@ if __name__ == "__main__":
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0]
     ]) """
+    """ b = np.array([#初期の盤面を表す配列
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1,-1, 0, 0, 0],
+        [0, 0, 0,-1,-1, 0, 0, 0],
+        [0, 0, 0, 0,-1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0]
+    ])  """
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
     black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
-    print(bitboard_to_numpy(68853694464,34628173824))
-    print(bitboard_to_numpy(18446322413156229360,282578800148751))
+    #print(bitboard_to_numpy(68853694464,34628173824))
+    
+    #print(bitboard_to_numpy(0,6288752))
     #white2=4684619928605818880
     #black2=9659097628700567490
     print(white)
     print(black)
-    
+    print(evaluate_board(white,black,0,0))
+    """ for i in range(4):
+        c = m_c_list[i]
+        e = m_e_list[i]
+        ce = c|e
+        print(bitboard_to_numpy(ce,0)) """
     #print(get_legal_square("white",white,black))
     #t1 = time.time()
     #white = 9659388999281902018
@@ -1584,8 +1679,17 @@ if __name__ == "__main__":
     #w,b = identify_flip_stone("black",white,black,"a8",mode=0)
     #print(w,b)
     #print(bitboard_to_numpy(w,b))
+    print(bitboard_to_numpy(18438572485976448056,7890112756392387))
+    print(bitboard_to_numpy(18438564776392572928,6764195534143939))
+    print(bitboard_to_numpy(37685252,34829500416))
     w_c,b_c  = get_confirmed_stones(white,black)
     print(bitboard_to_numpy(w_c,b_c))
+    print(minimax(18438572485976448056,7890112756392387,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    act = RowCol()
+    score = c_float()
+    lib.minimax(18438572485976448056,7890112756392387,3,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
+    print("r:",act.row,"c:",act.col)
+    act = convert_act_bit2str((act.row,act.col))
     #w_c2,b_c2 = w_c.bit_count(),b_c.bit_count()
     #print(bitboard_to_numpy(w_c,0))
     #print(bitboard_to_numpy(w_c,b_c))
@@ -1662,7 +1766,7 @@ if __name__ == "__main__":
 
     #result = identify_flip_stone("black",first_board,"d3")
     #print(result)
-    aa = 0b101
+    """ aa = 0b101
     bb = 0b111
     print(aa.bit_count())
-    print(aa.bit_length())
+    print(aa.bit_length()) """

@@ -30,6 +30,15 @@ nav{
 #head_nav{
     display: flex;
 }
+img#x_logo{
+    width: 40px;
+    height: 40px;
+}
+#x{
+    display: flex;
+    justify-content: center;
+    font-size: 30px;
+}
 .main_content{
     margin: auto;
     width: 50%;
@@ -64,7 +73,7 @@ nav{
     & img#thumb_nail{
         width: 95%;
     }
-    & a{
+    & a:not(.not_decorate){
         text-align: left;
         display: block;
         text-decoration: none;
@@ -105,7 +114,7 @@ nav{
             }
         }
     }
-    & a:hover{
+    & a:not(.not_decorate):hover{
         transform: translateX(-10px) translateY(-10px) scale(1.05);
         box-shadow: gray 10px 10px 30px;
         transition: 0.2s;
