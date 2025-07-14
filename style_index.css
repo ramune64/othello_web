@@ -93,7 +93,7 @@ img#x_logo{
             & img{
                 display: block;
                 margin: auto;
-                width: fit-content;
+                width: auto;
                 height: 120px;
                 margin-right: 10px;
                 border: black 3px solid;
@@ -130,7 +130,7 @@ img#x_logo{
     margin: auto;
     width: 90%;
 }
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 1150px) {
     h1{
         font-size: 16pt;
     }
@@ -166,7 +166,7 @@ img#x_logo{
             & div{
                 display: block;
                 width: fit-content;
-                
+                margin: auto;
                 & img{
                     display: block;
                     margin: auto;
