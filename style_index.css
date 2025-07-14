@@ -159,20 +159,20 @@ img#x_logo{
         & img{
             width: 90%;
         }
-        & a{
+        & a:not(.not_decorate){
             width: 95%;
             height: fit-content;
             min-height: fit-content;
             & div{
-                display: flex;
+                display: block;
                 width: fit-content;
                 
                 & img{
                     display: block;
                     margin: auto;
                     width: fit-content;
-                    height: 70px;
-                    margin-right: 10px;
+                    height: 100px;
+                    margin-right: auto;
                     border: black 3px solid;
                 }
                 & section{
