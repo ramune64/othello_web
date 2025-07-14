@@ -170,7 +170,6 @@ img#x_logo{
                 & img{
                     display: block;
                     margin: auto;
-                    width: fit-content;
                     height: 100px;
                     margin-right: auto;
                     border: black 3px solid;
