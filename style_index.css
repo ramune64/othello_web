@@ -130,7 +130,7 @@ img#x_logo{
     margin: auto;
     width: 90%;
 }
-@media screen and (max-width: 1150px) {
+@media screen and (max-width: 1400px) {
     h1{
         font-size: 16pt;
     }
