@@ -245,17 +245,18 @@ function calculate_CPU(lv,current_color,white,black){
             
             //[_,act_str] = result;
         }
-        const place = act_str; 
-        record += place;
-        let flips;
-        const result = identify_flip_stone(current_color,current_white,current_black,place,2).toJs();
-        [current_white,current_black,flips] = result;
-        current_white = BigInt(current_white);
-        current_black = BigInt(current_black);
-        console.log("none");
-        calculating_ele.style.display = "none";
-        update_turn(current_white,current_black);
+        
     }
+    const place = act_str; 
+    record += place;
+    let flips;
+    const result = identify_flip_stone(current_color,current_white,current_black,place,2).toJs();
+    [current_white,current_black,flips] = result;
+    current_white = BigInt(current_white);
+    current_black = BigInt(current_black);
+    console.log("none");
+    calculating_ele.style.display = "none";
+    update_turn(current_white,current_black);
     //console.log(act_str);
     
 }

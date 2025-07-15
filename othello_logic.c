@@ -983,6 +983,219 @@ float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float fal
     //return (float)((score*10 + con_score*con_weight*10 + edge_point*10)/10) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90*alpha);
 }
 
+float evaluate_board2(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass,float con_weight,float dis_num_weight,float board_weight,float dis_sum_weight,float legal_dis_weight){
+    //int con_weight = 100;
+    uint64_t empty =  ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF;
+    int turn = 64 - bit_count(empty);
+    float alpha = nmin(nmax(0,(turn -35) / 20),1);
+
+    uint64_t neighbor_mask_w =
+    (board_w << 1 & RIGHT_MASK) |  // 左
+    (board_w >> 1 & LEFT_MASK) |  // 右
+    (board_w << 8) |                          // 上
+    (board_w >> 8) |                         // 下
+    (board_w << 7 & RIGHT_MASK) |  // 左上
+    (board_w << 9 & LEFT_MASK) |  // 右上
+    (board_w >> 7 & LEFT_MASK) |  // 右下
+    (board_w >> 9 & RIGHT_MASK);   // 左下
+
+    uint64_t neighbor_mask_b =
+    (board_b << 1 & RIGHT_MASK) |  // 左
+    (board_b >> 1 & LEFT_MASK) |  // 右
+    (board_b << 8) |                          // 上
+    (board_b >> 8) |                          // 下
+    (board_b << 7 & RIGHT_MASK) |  // 左上
+    (board_b << 9 & LEFT_MASK) |  // 右上
+    (board_b >> 7 & LEFT_MASK) |  // 右下
+    (board_b >> 9 & RIGHT_MASK);   // 左下
+
+    uint64_t connected_pairs_w = neighbor_mask_w & board_w;
+    uint64_t connected_pairs_b = neighbor_mask_b & board_b;
+
+    printf("\nconnect_w:%llu",connected_pairs_w);
+    printf("\nconnect_b:%llu",connected_pairs_b);
+    
+    uint64_t open_stones_w = neighbor_mask_w & empty;
+    uint64_t open_stones_b = neighbor_mask_b & empty;
+
+    printf("\nopen_w:%llu",open_stones_w);
+    printf("\nopen_b:%llu",open_stones_b);
+
+    float spread_w = calc_spread_penalty(board_w);
+    float spread_b = calc_spread_penalty(board_b);
+
+    float b_snum = bit_count(board_b);
+    float w_snum = bit_count(board_w);
+
+    float connected_pairs_w_num = bit_count(connected_pairs_w)/(w_snum+1);
+    float connected_pairs_b_num = bit_count(connected_pairs_b)/(b_snum+1);
+
+    float open_stones_w_num = bit_count(open_stones_w)/(w_snum+1);
+    float open_stones_b_num = bit_count(open_stones_b)/(b_snum+1);
+
+    float connected_pairs_score = connected_pairs_w_num - connected_pairs_b_num;
+    float open_stones_score = -open_stones_w_num + open_stones_b_num;
+    float spread_score = -spread_w + spread_b;
+
+
+    RowCol legal_list_w[64];
+    //RowCol *legal_list_w = malloc(sizeof(RowCol) * 64);
+    //RowCol *legal_list_b = malloc(sizeof(RowCol) * 64);
+    int legal_list_size_w=0;
+    get_legal_square("white",board_w,board_b,legal_list_w,&legal_list_size_w);
+    //printf("\nwhite_legal_finish");
+    RowCol legal_list_b[64];
+    int legal_list_size_b=0;
+    //printf("\nblack_legal_start");
+    get_legal_square("black",board_w,board_b,legal_list_b,&legal_list_size_b);
+    //printf("\nlegal_list_size_b: %d\n", legal_list_size_b);
+    //printf("\nblack_finish");
+    //fflush(stdout);
+    //printf("\ndef_cx");
+    //fflush(stdout);
+    int w_cx = 0,b_cx = 0,index=0;
+    uint64_t w_legal=0,b_legal=0,legal_bit;
+    //printf("\ndef_cx2");
+    //fflush(stdout);
+    for(int idx=0;idx<legal_list_size_w;idx++){
+        RowCol legal = legal_list_w[idx];
+        int row=legal.row,col=legal.col; 
+        index = row*8 + col;
+        legal_bit = ((uint64_t)1)  << index;
+        w_legal |= legal_bit;
+        for(int cx_idx=0;cx_idx<12;cx_idx++){
+            RowCol cx = cx_zone[cx_idx];
+            int cx_row = cx.row,cx_col = cx.col;
+            if(cx_row == row && cx_col == col){
+                w_cx++;
+            }
+        }
+    }
+    //fflush(stdout);
+    for(int idx=0;idx<legal_list_size_b;idx++){
+        RowCol legal = legal_list_b[idx];
+        int row=legal.row,col=legal.col;
+        index = row*8 + col;
+        legal_bit = ((uint64_t)1)  << index;
+        b_legal |= legal_bit;
+        for(int cx_idx=0;cx_idx<12;cx_idx++){
+            RowCol cx = cx_zone[cx_idx];
+            int cx_row = cx.row,cx_col = cx.col;
+            if(cx_row == row && cx_col == col){
+                b_cx++;
+            }
+        }
+    }
+    //fflush(stdout);
+    float zennmetu_keikoku = 0;
+    if(bit_count(board_w) <= 2&&turn>=10){
+        zennmetu_keikoku = -45;
+    }
+    //fflush(stdout);
+    float edge_point_w = 0;
+    float edge_point_b = 0;
+    float edge_point,dis_num;
+    uint64_t m_e_list[4] = {m1_e,m2_e,m3_e,m4_e};
+    uint64_t m_c_list[4] = {m1_c,m2_c,m3_c,m4_c};
+    uint64_t c_w=0,c_b=0;
+    get_confirmed_stones(board_w,board_b,&c_w,&c_b);
+
+    int c_w_num=bit_count(c_w);
+    int c_b_num=bit_count(c_b);
+    float con_score = (c_w_num - c_b_num);
+    //fflush(stdout);
+    for(int i=0;i<4;i++){
+        int dec_point=0,add_point=0;
+
+        int w_num=0,b_num=0;
+
+        w_num = bit_count(board_w&m_e_list[i]);
+        b_num = bit_count(board_b&m_e_list[i]);
+        uint64_t w_corner = board_w&m_c_list[i];
+        uint64_t b_corner = board_b&m_c_list[i];
+        uint64_t w_corner_legal = w_legal&m_c_list[i];
+        uint64_t b_corner_legal = b_legal&m_c_list[i];
+        //printf("\nw:%d\nb:%d",w_num,b_num);
+        if(w_num==6){
+            int dec = 0;
+            if(bit_count(b_corner)==1&&bit_count(w_corner)==0){
+                dec_point += 10*6*con_weight* 4/5/10;
+                dec = 1;
+            }
+            if(bit_count(b_corner_legal)>0){
+                dec_point += 10*6*con_weight* 3/5/10;
+                dec = 1;
+            }
+            if(dec==0){
+                add_point += 10*6*con_weight* 4/5/10;
+            }
+        }
+        //printf("\nadd:%d\ndec:%d",add_point,dec_point);
+        edge_point_w += add_point;
+        edge_point_w -= dec_point;
+        dec_point = 0;
+        add_point = 0;
+        if(b_num == 0){
+            edge_point_w += w_num*con_weight*1/20;
+        }
+        if(b_num==6){
+            int dec = 0;
+            if(bit_count(w_corner)==1&&bit_count(b_corner)==0){
+                dec_point += 10*6*con_weight* 4/5/10;
+                dec = 1;
+                //printf("\n1:%f",10*6*con_weight* (4.0/5)/10);
+            }
+            if(bit_count(w_corner_legal)>0){
+                dec_point += 10*6*con_weight* 3/5/10;
+                dec = 1;
+                //printf("\n2:%f",10*6*con_weight* (3.0/5)/10);
+            }
+            if(dec==0){
+                add_point += 10*6*con_weight* 4/5/10;
+                //printf("\n3:%f",10*6*con_weight* (4.0/5)/10);
+            }
+        }
+        edge_point_b += add_point;
+        edge_point_b -= dec_point;
+        if (w_num==0){
+            edge_point_b += b_num*con_weight*1/20;
+            //printf("\nnum:%d",b_num*con_weight*1/20);
+        }
+    }
+    //fflush(stdout);
+    edge_point = edge_point_w - edge_point_b;
+    //printf("\nw:%f\nb:%f",edge_point_w,edge_point_b);
+    dis_num = legal_list_size_w - legal_list_size_b -w_cx+b_cx;
+    //printf("\n%d,%d,%d,%d",legal_list_size_w , legal_list_size_b ,w_cx,b_cx);
+    int white_score=0,black_score=0;
+    eval_bitboard_score(board_w,board_b,&white_score,&black_score);
+
+    float board_score = white_score - black_score*1.5;
+
+    /* int b_snum = bit_count(board_b);
+    int w_snum = bit_count(board_w); */
+    float lose_keikoku = 0;
+    //fflush(stdout);
+    if(legal_list_size_b==0&&legal_list_size_w==0&&b_snum > w_snum){
+        lose_keikoku = -1000;
+    }
+    float pass_bonus = false_pass-true_pass;
+
+    float score = (1-alpha) * (dis_num*dis_num_weight +  board_score*board_weight) + alpha * ((w_snum-b_snum)*dis_sum_weight+(legal_list_size_w-legal_list_size_b)*legal_dis_weight);
+
+    //fflush(stdout);
+
+
+    //printf("\nscore:%f\ncon_score:%d\nedge_point:%f\ndis_num:%f\nalpha:%f\ndis:%d",board_score,con_score,edge_point,dis_num,alpha,w_snum-b_snum);
+    //printf("\naa:%f",(score*10 + con_score*con_weight*10 + edge_point*10)/10);
+    //printf("\naa:%d",zennmetu_keikoku + lose_keikoku + pass_bonus*90*alpha);
+    //free(legal_list_w);
+    //free(legal_list_b);
+    //printf("\ndef_cx3");
+    return ((float)(score*10 + con_score*con_weight*10 + edge_point*10) / 10.0f) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90.0f*alpha);
+    //return (float)((score*10 + con_score*con_weight*10 + edge_point*10)/10) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90*alpha);
+}
+
 
 int is_terminal(uint64_t board_w,uint64_t board_b){
     //if get_legal_square("white",board) == [] and get_legal_square("black",board.copy()*-1) == []:
@@ -1337,6 +1550,8 @@ void minimax2(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta
         return;
     }
 }
+
+
 
 
 
