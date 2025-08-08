@@ -1459,7 +1459,7 @@ def progress_game(game_nun = 10):
         colors = {1:"white",-1:"black"}
         turn_color = -1
         
-        print("対局開始")
+        #print("対局開始")
         while True:
             turn_legal = get_legal_square(colors[turn_color],boards[1],boards[-1])
             if turn_legal == []:
@@ -1472,7 +1472,7 @@ def progress_game(game_nun = 10):
             if minimax_color == turn_color:
                 act = RowCol()
                 score = c_float()
-                lib.minimax(boards[turn_color],boards[turn_color*-1],2,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
+                lib.minimax(boards[turn_color],boards[turn_color*-1],1,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
                 act = convert_act_bit2str((act.row,act.col))
                 #print(act)
                 #_,act = othello_play_cython2.minimax(boards[turn_color],boards[turn_color*-1],6,alpha=float('-inf'),beta=float('inf'),maximizing_player=True)
@@ -1496,7 +1496,7 @@ def progress_game(game_nun = 10):
                 minimax_win += 1
             else:
                 rand_win += 1
-        print("終局")
+        print("終局",_+1,"試合目")
         minimax_color *= -1
     print("白:",w_win,"勝")
     print("黒:",b_win,"勝")
@@ -1627,7 +1627,7 @@ if __name__ == "__main__":
             [-1, -1,  0,  0,  0, -1,  1, -1],
             [-1, -1,  0,  0,  0,  0, -1, -1],
             [ 1, -1, -1, -1, -1, -1, -1,  1]]) """
-    """ b = np.array([#初期の盤面を表す配列
+    b = np.array([#初期の盤面を表す配列
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -1636,27 +1636,118 @@ if __name__ == "__main__":
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0]
-    ]) """
-    """ b = np.array([#初期の盤面を表す配列
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1,-1, 0, 0, 0],
-        [0, 0, 0,-1,-1, 0, 0, 0],
-        [0, 0, 0, 0,-1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0]
-    ])  """
+    ])
+    b = np.array([
+        [-1,-1,-1,-1,-1, 0, 0, 0],
+        [-1,-1,-1, 0, 0, 0, 0, 0],
+        [-1,-1,-1, 0, 0, 0, 0, 0],
+        [-1, 0, 0, 1, 0, 0, 0, 0],
+        [-1, 0, 0, 0, 0, 0, 0, 0],
+        [-1, 0, 0, 0, 0, 0, 0, 0],
+        [-1, 0, 0, 0, 0, 0, 0, 0],
+        [-1, 0, 0, 0, 0, 0, 0, 0]
+    ])
+    b = np.array([
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 1, 0, 0, 0, 0, 0],
+        [ 0, 0, 1, 0, 0,-1,-1, 0],
+        [ 0, 0, 1, 1, 1,-1, 1, 0],
+        [ 0, 0, 0,-1,-1, 1, 0, 0],
+        [ 0, 0, 0, 0,-1,-1, 1, 0],
+        [ 0, 0, 0, 0, 0,-1, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0]
+    ])
+    b = np.array([
+        [ 0,-1,-1,-1,-1,-1, 0, 0],
+        [ 0, 0,-1,-1,-1,-1, 0, 0],
+        [ 1,-1, 1,-1, 1, 1, 1, 1],
+        [ 1, 0, 1,-1,-1,-1, 1, 0],
+        [ 1, 0, 1,-1,-1,-1,-1,-1],
+        [ 0, 0, 1,-1, 1, 1,-1,-1],
+        [ 0, 0,-1,-1,-1,-1, 0,-1],
+        [ 0,-1,-1,-1,-1,-1, 0, 0]
+    ])
+    b = np.array([
+        [ 1, 0, 1, 1, 1, 1, 0, 1],
+        [ 0, 0, 1, 1, 1, 1, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [ 0, 0, 0, 0, 0, 0, 0, 0]
+    ])
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
     black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
     #print(bitboard_to_numpy(68853694464,34628173824))
-    
+    """ boards = [
+        1161999622361579520,
+        2151686160,
+        16909320,
+        577588855528488960,
+        580999813328273408,
+        550831656968,
+        4328785936,
+        1155177711073755136,
+        290499906672525312,
+        141012904183812,
+        1108169199648,
+        2310355422147575808,
+        145249953336295424,
+        36099303471055874,
+        283691315109952,
+        4620710844295151872,
+        72624976668147840,
+        9241421688590303745,
+        72624976668147840,
+        9241421688590303745,
+        71776119061217280,
+        4629771061636907072,
+        65280,
+        144680345676153346,
+        280375465082880,
+        2314885530818453536,
+        16711680,
+        289360691352306692,
+        1095216660480,
+        1157442765409226768,
+        4278190080,
+        578721382704613384,
+        18393263828134526976,
+        9277556521783312512,
+        17151,
+        72903122791498497,
+        17940089115630370816,
+        827867578560,
+        7967,
+        217020518514032640,
+        16204197749883666432,
+        14737632,
+        460551,
+        506381179683864576,
+        17924467806326226944,
+        551911735544,
+        4311810847,
+        2234630943929270272
+    ] """
+    boards = [
+        13635773771771019264
+    ]
+    for board in boards:
+        #print(board.bit_count(),",")
+        rotate_90deg = rotate90(board)
+        rotate_180deg = rotate90(rotate_90deg)
+        rotate_270deg = rotate90(rotate_180deg)
+        print(board,",")
+        print(rotate_90deg,",")
+        print(rotate_180deg,",")
+        print(rotate_270deg,",")
     #print(bitboard_to_numpy(0,6288752))
     #white2=4684619928605818880
     #black2=9659097628700567490
     print(white)
     print(black)
-    print(evaluate_board(white,black,0,0))
+    #print(evaluate_board(white,black,0,0))
     """ for i in range(4):
         c = m_c_list[i]
         e = m_e_list[i]
@@ -1679,17 +1770,18 @@ if __name__ == "__main__":
     #w,b = identify_flip_stone("black",white,black,"a8",mode=0)
     #print(w,b)
     #print(bitboard_to_numpy(w,b))
-    print(bitboard_to_numpy(18438572485976448056,7890112756392387))
-    print(bitboard_to_numpy(18438564776392572928,6764195534143939))
-    print(bitboard_to_numpy(37685252,34829500416))
-    w_c,b_c  = get_confirmed_stones(white,black)
-    print(bitboard_to_numpy(w_c,b_c))
-    print(minimax(18438572485976448056,7890112756392387,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    #print(bitboard_to_numpy(18438572485976448056,7890112756392387))
+    #print(bitboard_to_numpy(18438564776392572928,6764195534143939))
+    #print(bitboard_to_numpy(37685252,34829500416))
+    #w_c,b_c  = get_confirmed_stones(white,black)
+    #print(bitboard_to_numpy(w_c,b_c))
+    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
     act = RowCol()
     score = c_float()
-    lib.minimax(18438572485976448056,7890112756392387,3,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
+    lib.minimax(black,white,3,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
     print("r:",act.row,"c:",act.col)
     act = convert_act_bit2str((act.row,act.col))
+    print(act)
     #w_c2,b_c2 = w_c.bit_count(),b_c.bit_count()
     #print(bitboard_to_numpy(w_c,0))
     #print(bitboard_to_numpy(w_c,b_c))

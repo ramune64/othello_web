@@ -1,3 +1,10 @@
 /build
 /.vscode
 /emsdk
+/csvs
+/opponents
+/weights
+/opponents2
+/weights2
+/opponents1_2
+/weights1_2
