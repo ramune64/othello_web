@@ -1,4 +1,4 @@
-const article_order = ["../index.html","../how_use/how_use.html","../selfintroduce.html","../articles/article1.html","../articles/article2.html"]
+const article_order = ["../index.html","../how_use/how_use.html","../selfintroduce.html","../articles/article1.html","../articles/article2.html","../articles/procon1.html"]
 const main_content = Array.from(document.getElementsByClassName("main_content"))[0];
 
 article_order.reverse().forEach(path => {
