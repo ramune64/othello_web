@@ -10,9 +10,9 @@ hyper_links.forEach(element => {
         const intro_txt = doc.getElementById("intro")?.innerText;
         let thumb_nail_src = doc.getElementById("thumb_nail")?.src;
         if(thumb_nail_src===undefined){
-            const ogImage = doc.querySelector('meta[property="og:image"]'.replace("https://e-coach-ai.com/",""));
+            const ogImage = doc.querySelector('meta[property="og:image"]');
             thumb_nail_src = ogImage?.getAttribute("content");
-            thumb_nail_src = "/" + thumb_nail_src
+            thumb_nail_src = thumb_nail_src
         }
         
         const h5 = element.querySelector("h5");
