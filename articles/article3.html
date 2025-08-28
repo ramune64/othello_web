@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css" type="text/css">
+    <link rel="stylesheet" href="../style_index.css" type="text/css">
+    <meta property="og:image" content="https://e-coach-ai.com/articles/article2_imgs/thumb_article2.png">
+    <meta property="og:description" content="モンテカルロ木探索やそれに必要な木構造など、オセロアルゴリズムについて解説第2回">
+    <meta property="og:title" content="オセロのアルゴリズムに関して2">
+    <meta property="og:image:width" content="960">
+    <meta property="og:image:height" content="510">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://e-coach-ai.com/articles/article2.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@e_Coachi_AI">
+    <script type="text/javascript" asyncsrc="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=MML_SVG"></script>
+    <title>オセロのアルゴリズムに関して3</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
+     crossorigin="anonymous"></script>
+    <link rel="apple-touch-icon" href="../imgs\favicon.ico">
+    <link rel="icon" href="../imgs\favicon.ico">
+</head>
+<body>
+    <div id="head_nav">
+        <div id="header">
+            <a href="../index.html"><img src="../imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
+        </div>
+        <nav>
+            <a href="../index.html">ホーム</a>
+            <a href="../list.html">記事一覧</a>
+            <a href="../play_othello.html">オセロゲーム</a>
+        </nav>
+    </div>
+    
+    <div  class="main_title">
+        <h1>オセロのアルゴリズムに関して</h1>
+    </div>
+    <div class="main_content">
+        <h2 id="theme">第3回：minimax法</h2>
+        <p id="intro">この記事では、minimax法の詳細や、alpha-beta法で使われる「枝刈り」について。さらに、前回紹介したモンテカルロ木探索との違いを解説します。
+        </p>
+        <img src="../articles/article2_imgs/thumb_article2.png" id="thumb_nail" alt="このページのサムネイル。「オセロのアルゴリズム解説　第一回　minimax法？モンテカルロ法？　そもそもアルゴリズムとは？　基本的な事項を解説！　と書いてある。">
+        <p>前回の記事はこちらからどうぞ</p>
+        <a href="../articles/article2.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        <h3 id="1">1.minimax法とは</h3>
+        <p>
+            minimax法はオセロ以外にも、将棋、チェス、囲碁などの「二人零和有限確定完全情報ゲーム」には非常に有効であるとされています。<br>
+            急に出てきましたが、「二人零和有限確定完全情報ゲーム」とは何でしょうか？<a href="https://ja.wikipedia.org/wiki/二人零和有限確定完全情報ゲーム" target="_blank" class="not_decorate">wikipedia</a>を参考にすると「ゲーム理論によるゲームの分類の一つ。」とのことで、それぞれ意味を持った言葉が組み合わさって構成された言葉であることがわかります。意味はそれぞれ、
+        </p>
+        <ul>
+            <li>二人:プレイヤー数が二人</li>
+            <li>零和:プレイヤー間の利害が完全に対立し、一方のプレイヤーが利得を得ると、それと同量の損害が他方のプレイヤーに降りかかる</li>
+            <li>有限:ゲームが必ず有限の手番で終了する</li>
+            <li>確定:サイコロのようなランダムな要素が存在しない</li>
+            <li>完全情報:全ての情報が両方のプレイヤーに公開されている</li>
+        </ul>
+        <p>
+            です。<br>
+            オセロで例えると、自分が3枚石を「返す」と相手は3枚「返される」の関係になっているといった部分が「零和」。手番は必ず60手以内と有限である点が「有限」。ランダム要素は存在せず、常に同じルールのもと対局が進行する点が「確定」。局面の情報は8x8の64マスに対してそれぞれ石が「ある(白)」「ある(黒)」「ない」の3パターンで全てが説明でき、この情報は両プレイヤーが把握できますよね。この部分が「完全情報」となります。<br>
+            そんな「二人零和有限確定完全情報ゲーム」に有効なminimax法ですが、基盤となる理念は第一回↓
+        </p>
+        <a href="../articles/article1.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        <p>
+            の「<a href="https://e-coach-ai.com/articles/article1.html#3" target="_blank" class="not_decorate">3.オセロのアルゴリズム</a>」にて軽く触れているため、ここではそれをさらに掘り下げる形で解説していきます。<br>
+            とりあえず上記の記事で解説している点を画像で示したいと思います。
+        </p>
+        <p>
+            上の画像は「自分の手番では最も得点が高い手を選ぶ」を表したゲーム木(木構造の構成要素とでも思ってください。「木構造」については<a href="https://e-coach-ai.com/articles/article2.html#2" target="_blank" class="not_decorate">こちら</a>を参照)です。自分が手を打って作れる盤面の中から、最も得点が高い(=自分に有利)盤面になる手を採用するという意味ですね。では次にの画像をご覧ください。
+        </p>
+        <p>
+            前の画像から色と数字が入れ替わっているだけのように思えますが、問題は採用している数字です。先ほどは最も大きい値を採用していましたが、こんどは最も小さな値を採用しています。つまりこれが、「相手の手番では最も得点が低い手を選ぶ」ということです。<br>
+            minimax法はこの2つのゲーム木を組み合わせたら完成するような作りになっています。まず、自分の手からは最大の値を選ぶ枝を伸ばし、その次が相手の手だったらそこからは最小の値を選ぶ枝を伸ばし、その次が自分のターンなら...というサイクルを決められた深さに達するかゲームが終わる盤面になるまで、<b>全ての</b>ノードに対して実行するのです。そして、このようにして作られた木構造の葉ノードではその盤面の得点を実際に計算し、それぞれのノードを遡るようにしてそのノードが自分の手番か、相手の手番かに対応させて得点を選んでいきます。そうして、一番上(根ノード)が選んだノードがその局面の手として決定されるのです。
+        </p>
+        <!-- 記事1で用いた画像の成り立ちを、今回の内容に沿ってさらに細かく説明するような画像を入れる -->
+        <h3 id="2">2.minimax法の特徴</h3>
+        <p>
+            次に、minimax法の特徴をいくつか紹介します。
+        </p>
+        <h4>絶対に同じ手が結果として出力される</h4>
+        <h4>強さが評価関数に依存する</h4>
+        <h4>対策をしないと計算に膨大な時間がかかる</h4>
+        <p>
+            これらの対策の主な方針として、
+        </p>
+        <ul>
+            <li>計算時間を減らす</li>
+            <li>計算量を減らす</li>
+        </ul>
+        <p>
+            というものがあり、一つ目には
+        </p>
+        <ul>
+            <li>マシンのスペックを上げる</li>
+            <li>盤面の処理(石の反転処理など)を効率化する</li>
+            <li>ビットボードで盤面を管理する</li>
+        </ul>
+        <p>
+            などがあげられ、二つ目には
+        </p>
+        <ul>
+            <li>
+                盤面と得点を対応させて保存しておくことで、次に同じ盤面を評価することになった場合に、その後の計算を丸々省略させる
+            </li>
+            <li>αβ法の導入</li>
+        </ul>
+        <p>
+            などがあげられます。
+            上記のαβ法(アルファベータ法)はもはminimax法とは別手法のような感じで名前が付いています。次はαβ法について詳しく解説します。
+        </p>
+        <h3 id="3">3.モンテカルロ木探索の詳細</h3>
+        <p>
+            さて、先ほど
+        </p>
+        <ul style="color: gray;">
+            <li>最初は全ての手を平等に試す</li>
+            <li>試行を重ねていくうちに、勝率が高そうな手が見えてきたら、そちらを多めに試す</li>
+            <li>ただし、初期の勝率はまだ不確かなので、他の手も試す（探索の幅を残す）</li>
+        </ul>
+        <p>
+            と述べましたが、この後半の2点は決められた回数の中で「より一つの手に集中することで勝率を正確に求めたい」一方、「なるべく他の手も試して意外と強い手を見逃さないようにしたい」という矛盾を抱えているのです。<br>
+            この相反する二つをどのように両立させたら良いでしょうか？<br>
+            順を追って説明していきます。
+        </p>
+        <h4>まずは全ての手を試す</h4>
+        <p>
+            この部分はなんとなく想像できるかもしれません。そのままです。<br>
+            まだ試していないノードが存在したら、それを一通り試します。こうすることで、そのノードから着手できる全ての手を少なくとも1回ずつ試したという状況を作ることができます。<br>
+            具体的には、根ノードから取れる試したことのない手(ノード)を一つ選んだあと、そこから対局が終わるまでランダムに局面を進めます。(<b>シミュレーション</b>)この勝敗をシュミレーション中に通った各ノードに保存する(<b>バックプロパゲーション</b>)ことで、その手と勝敗の関係が統計的に蓄積されていくことになります。<br>
+            また、この未探索のノードをランダムにシミュレーションすることを「<b>展開</b>」と呼びます。
+        </p>
+        <h4>優先順位をつける</h4>
+        <p>
+            すべての手(子ノード)が最低1回ずつ試されているノードの場合は、優先順位をつけて最も優先順位が高いものを試していきます。(<b>選択</b>)<br>
+            この優先順位は、
+        </p>
+        <ul>
+            <li>勝率が高い手</li>
+            <li>試行回数が足りない手</li>
+        </ul>
+        <p>
+            をもとに一定の決まりに沿って決定します。ここの難しい点は、その何回かのシミュレーションの結果による各ノードの既知の勝率利用(知識活用)と、シミュレーションの回数の不足による探索のバランスを取ることであり、また、この決定方法は無数に存在するため、「どの数式を使うのか」という問題も出てきます。<br>
+            ここでは、比較的シンプルな<b>UCT(Upper Confidence Tree)</b>の数式を紹介します。<br>
+            数式は、
+        </p>
+        <math class="formula">
+            <mfrac>
+                <mrow>
+                    <mi>w</mi>
+                </mrow>
+                <msub>
+                    <mi>n</mi>
+                </msub>
+            </mfrac>
+            <mo>+</mo>
+            <mi>c</mi>
+            <msqrt>
+                <mfrac>
+                    <mrow>
+                        <mi>ln</mi>
+                        <mi>N</mi>
+                    </mrow>
+                    <msub>
+                        <mi>n</mi>
+                    </msub>
+                </mfrac>
+            </msqrt>
+        </math>
+        <p>
+            と表され、文字の意味は
+        </p>
+        <ul>
+            <li>w:そのノードを経由して勝った回数</li>
+            <li>n:そのノードの試行回数</li>
+            <li>N:そのノードの親ノードの試行回数（親が選ばれた回数）</li>
+            <li>c:定数。知識活用と、探索のバランスを決めるパラメータで、理論上は<math><msqrt><mi>2</mi></msqrt></math>だが、運用時は探索がうまくいくように調整する。</li>
+        </ul>
+        <p>
+            です。<br>
+            左の項はそのノードの勝率、右の項はそのノードの「選ばれていなさ」で、試行回数が少ないほど値が大きくなります。また、そこにcをかけることで探索の重要度を決定しています。<br>
+            このUCTは、
+        </p>
+        <ul>
+            <li>よく試されていて勝率が高い手 → 点数が高くなる</li>
+            <li>試行回数が少ない手 → まだチャンスがあると判断される(点数が高くなる)</li>
+            <li>たくさん試されていて勝率も悪い手 → 点数が下がる</li>
+        </ul>
+        <p>
+            といった特徴があり、「すべてのノードに関してこの計算を行い、最も数字が大きいノードでシミュレーションを進める。」というのを繰り返すことで、最終的には「勝てそうな手」へと試行が収束していくのです。<br>
+            
+        </p>
+        <h4>
+            最終的な決定
+        </h4>
+        <p>
+            このようにして1つの根ノードで、決められた量の試行を行い、「最も勝てそうな手」を選びます。ここで重要なのは、選ぶノードは「最も勝率が高い手」ではなく、「最も試行回数が多い手」のノードであるということです。<br>
+            これは、例えば
+        </p>
+        <ul>
+            <li>試行回数が10回で、勝利数が5回(勝率50%)</li>
+            <li>試行回数が1000回で、勝利数が499回(勝率49.9%)</li>
+        </ul>
+        <p>
+            の2つの手があった場合、一見すると前者のほうが勝率は高いように見えますが、試行数が少ないため偶然の可能性もあります。<br>
+            一方、後者は非常に多く試されており、信頼性の高い勝率と判断できます。モンテカルロ木探索では、試行が集中した=信頼されている手と考え、最も試行回数の多いノードを最終手として選ぶのです。
+        </p>
+        <img src="../articles/article2_imgs/img2.png" alt="モンテカルロ木探索の概要を表すフローチャート">
+        <img src="../articles/article2_imgs/img3.png" alt="モンテカルロ木探索の概要を木構造の図を用いて説明する画像">
+        <p>※上図のノードGの子ノードは、ノードH,I,Jの他にもあり、合計で18個以上あると思ってください。</p>
+        <h3 id="4">4.おわりに</h3>
+        <p>
+            この記事では、モンテカルロ木探索について詳しく解説してきました。次回は、前回紹介した「minimax法」に関して、モンテカルロ木探索との違いも絡めつつ解説します。
+        </p>
+        <p><br><br>次の記事↓</p>
+        <a href="../articles/procon1.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        <p>前回の記事↓</p>
+        <a href="../articles/article1.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+    </div>
+    <div id="fotter">
+                <a id="x" href="https://x.com/e_Coachi_AI" target="_blank">
+                    <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
+                </a>
+                <p>&copy; 2025 ЯAMUNE</p>
+            </div>
+    <script src="../article.js"></script>
+</body>
+</html>
