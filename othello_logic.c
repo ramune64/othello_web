@@ -1988,6 +1988,12 @@ float evaluate_board3(uint64_t board_w,uint64_t board_b,float true_pass,float fa
     //free(legal_list_w);
     //free(legal_list_b);
     //printf("\ndef_cx3");
+    printf("score:%2.f\n",score);
+    printf("edge:%2.f\n",edge_point);
+    printf("stable:%2.f\n",con_score);
+    printf("zennmetu_keikoku:%2.f\n",(float)zennmetu_keikoku);
+    printf("pass:%2.f\n",(float)pass_bonus);
+    printf("pattern:%2.f\n",(float)pattern_point);
     return ((float)(score + con_score*con_weight + edge_point*edge_weight)) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*pass_weight) + pattern_point;
     //return (float)((score*10 + con_score*con_weight*10 + edge_point*10)/10) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90*alpha);
 }
@@ -3793,7 +3799,9 @@ int main(void){
     black = 34829500416ULL;
     white = 8952118241016364412ULL;
     black = 193113006800896ULL;
-
+    white = 8952118241016364415ULL;
+    black = 193113006800896ULL;
+    printf("%2.f",evaluate_board3(white,black,0,0,100,1,8.19,5.93,10.3,5.33,8.5,10.3,-11.7,60,47.74,31.71,10.38,6.96,14.53,0.04,3.64,-0.28,14.4));
     printf("\n%f",evaluate_board(white,black,0,0));
     uint64_t c_w=0,c_b=0;
     get_confirmed_stones(white,black,&c_w,&c_b);
@@ -3810,6 +3818,6 @@ int main(void){
     printf("\nb:%f",calc_spread_penalty(black));
     //GA_main();
     //GA_init();
-    test_main();
+    //test_main();
     return 0;
 }

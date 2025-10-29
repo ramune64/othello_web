@@ -1679,7 +1679,7 @@ if __name__ == "__main__":
     ])
     white = board_to_bitboard(b.copy(), 1)&0xFFFFFFFFFFFFFFFF
     black = board_to_bitboard(b.copy(), -1)&0xFFFFFFFFFFFFFFFF
-    #print(bitboard_to_numpy(68853694464,34628173824))
+    print(bitboard_to_numpy(8952118241016364412,193113006800896))
     """ boards = [
         1161999622361579520,
         2151686160,
@@ -1775,13 +1775,13 @@ if __name__ == "__main__":
     #print(bitboard_to_numpy(37685252,34829500416))
     #w_c,b_c  = get_confirmed_stones(white,black)
     #print(bitboard_to_numpy(w_c,b_c))
-    print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    """ print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
     act = RowCol()
     score = c_float()
     lib.minimax(black,white,3,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
     print("r:",act.row,"c:",act.col)
     act = convert_act_bit2str((act.row,act.col))
-    print(act)
+    print(act) """
     #w_c2,b_c2 = w_c.bit_count(),b_c.bit_count()
     #print(bitboard_to_numpy(w_c,0))
     #print(bitboard_to_numpy(w_c,b_c))

@@ -1,15 +1,7 @@
-fitness_col = df.columns[i]
-
-    top_fitness = df[fitness_col].iloc[2::5].reset_index(drop=True)
-
-    rolling_mean = top_fitness.rolling(window=100).mean()
-
-    # プロット
-    plt.figure(figsize=(12,6))
-    plt.plot(top_fitness, label=f"{fitness_col} (raw)")   # 薄く描画
-    plt.plot(rolling_mean, label="100-gen moving average", color="red", linewidth=2,alpha = 0.6)
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.legend()
-    plt.savefig(f"fig_{fitness_col}.png", dpi=300, bbox_inches="tight")
-    #plt.show()
+print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    act = RowCol()
+    score = c_float()
+    lib.minimax(black,white,3,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
+    print("r:",act.row,"c:",act.col)
+    act = convert_act_bit2str((act.row,act.col))
+    print(act)

@@ -29,6 +29,10 @@ nav{
 }
 #head_nav{
     display: flex;
+    & nav a{
+        box-shadow: 10px 10px 10px gray;
+        
+    }
 }
 img#x_logo{
     width: 40px;
