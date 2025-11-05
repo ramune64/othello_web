@@ -20,7 +20,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://e-coach-ai.com/play_othello.html">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@e_Coachi_AI">
+    <meta name="twitter:site" content="@e_Coach_AI">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
      crossorigin="anonymous"></script>
      <link rel="apple-touch-icon" href="../imgs\favicon.ico">
@@ -34,12 +34,42 @@
     <style>
         #loading { outline: none; border: none; background: transparent }
     </style>
+    <script>
+        let wasm_ready = false;
+        let minimax_c = null;
+        var Module = {
+            onRuntimeInitialized() {
+            minimax_c = Module.cwrap("minimax", null, [
+                "bigint", "bigint", "number", "number", "number",
+                "number", "number", "number", "number", "number"
+            ]);
+            wasm_ready = true;
+            console.log("wasm_OK");
+            checkReady();
+            }
+};
+</script>
     <script src="othello_logic.js"></script>
     <script type="module">
         const over_wrap = document.getElementById("over_wrap");
         const mode_button_parent = document.getElementById("mode_button_parent");
         const loading = document.getElementById('loading');
-        addEventListener('py:ready', () => {loading.close();over_wrap.style.display="block";mode_button_parent.style.display="block";});
+        
+        let py_ready = false;
+        
+        addEventListener('py:ready', () => {
+            py_ready = true;
+            console.log("python_OK");
+            checkReady();
+        });
+        function checkReady() {
+        if (wasm_ready && py_ready) {
+            loading.close();
+            over_wrap.style.display="block";
+            mode_button_parent.style.display="block";
+            console.log("✅ WASM & Python ready");
+        }
+}
         loading.showModal();
         
     </script>
@@ -146,8 +176,8 @@
             </div>
             <div id="overview" class="main_content">
                 <p style="font-size: 12pt;">
-                    <span id="intro">オセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-Coach_AI</u></b><br>
-                    に搭載されているオセロアルゴリズムと対戦をしたり、他の人と対戦することができるページです。<br>対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。</span><br>
+                    <span id="intro">ブラウザ上でオセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-Coach_AI</u></b><br>
+                    に搭載されているオセロ(リバーシ)アルゴリズムと対戦をしたり、他の人と対戦することができるページです。<br>対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。</span><br>
                     アプリの概要はこちら↓から
                 </p>
                 <a href="index.html" target="_blank" class="same_domain">
@@ -180,7 +210,7 @@
                 <div id="ad_space6" class="ad_space2"></div>
             </div>
             <div id="fotter">
-                <a id="x" href="https://x.com/e_Coachi_AI" target="_blank">
+                <a id="x" href="https://x.com/e_Coach_AI" target="_blank">
                     <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
                 </a>
                 <p>&copy; 2025 ЯAMUNE</p>
@@ -219,8 +249,20 @@
                 <div class="mode_button" id="lv5">
                     <h2>CPUと(LV5,depth=5)</h2>
                 </div>
+                <div class="mode_button" id="lv6">
+                    <h2>CPUと(LV6,depth=6)</h2>
+                </div>
+                <div class="mode_button" id="lv7">
+                    <h2>CPUと(LV7,depth=7)</h2>
+                </div>
+                <div class="mode_button" id="lv8">
+                    <h2>CPUと(LV8,depth=8)</h2>
+                </div>
+                <div class="mode_button" id="lv9">
+                    <h2>CPUと(LV9,depth=8+α)</h2>
+                </div>
             </div>
-            <h3>※レベルが高い(特にLV5)ほど計算に時間がかかります</h3>
+            <h3>※レベルが高いほど計算に時間がかかります</h3>
             <h3>※計算中に「応答なし」と通知されることがありますが、待機してください。</h3>
         </div>
         <div id="color_button_parent">
@@ -246,7 +288,10 @@
             <p><span id="black_stone"></span>黒：<span id="black_num"></span>枚</p>
             <p><span id="white_stone"></span>白：<span id="white_num"></span>枚</p>
             <p>で<span id="winner"></span></p>
+            <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            <button id="share-btn">𝕏で結果をシェアする</button>
             <h2>棋譜データ</h2>
+        
             <span id="copy">クリップボードにコピー</span>
             <p id="record"></p>
         </div>

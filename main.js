@@ -21,7 +21,7 @@ function get_place(board){
     return boxes;
 }
 
-function place_stone(white_places,black_places){
+function place_stone(white_places,black_places,last_placed,flips){
     white_places.forEach(white_place=>{
         //console.log(white_place);
         const stone_ele = document.getElementById(white_place+"_stone");
@@ -36,15 +36,31 @@ function place_stone(white_places,black_places){
         stone_ele.classList.remove("white");
         stone_ele.classList.add("black");
     })
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col <8; col++) {
+            const id_name = col_letters[col] + (row+1);
+            const box_ele = document.getElementById(id_name);
+            box_ele.style.backgroundColor = "rgba(0,0,0,0)";
+        }
+    }
+    if(last_placed){
+        document.getElementById(last_placed).style.backgroundColor="gray";
+    }
+    if(flips){
+        flips.forEach(element => {
+            let flip_str = convert_act_bit2str(element);
+            document.getElementById(flip_str).style.backgroundColor="rgba(128,128,128,0.5)"
+        });
+    }
 
 }
 
-function board2place(white_board,black_board){
+function board2place(white_board,black_board,last_placed,flips){
     const white_places = get_place(white_board);
     const black_places = get_place(black_board);
     //console.log(white_places);
     //console.log(black_places);
-    place_stone(white_places,black_places);
+    place_stone(white_places,black_places,last_placed,flips);
 }
 function countBits(n) {
     let count = 0n;
@@ -65,8 +81,8 @@ const record_txt = document.getElementById("record");
 
 const calculating_ele = document.getElementById("calculating");
 const whitch_color = document.getElementById("whitch_color");
-function update_turn(white_board,black_board){
-    board2place(white_board,black_board);
+function update_turn(white_board,black_board,last_placed,flips){
+    board2place(white_board,black_board,last_placed,flips);
     let color_index;
     let first_check_color;
     let second_check_color;
@@ -157,22 +173,12 @@ async function callMinimax(white, black, lv, pl) {
     return result;
 }
 
-let wasm_ready = false;
-let minimax_c = null;
 
-Module.onRuntimeInitialized = () => {
-    // WASMの関数をラップ（戻り値なし、引数10個）
-    minimax_c = Module.cwrap("minimax_split", null,
-        ["number","number","number", "number", "number", "number", "number",
-        "number", "number", "number", "number", "number"]);
-    wasm_ready = true;
-};
+
+
+
 async function runMinimax(board_w, board_b, lv, pl) {
-    if (!wasm_ready) {
-        console.warn("WASMまだ初期化されていません");
-        return;
-    }
-    const w_high = board_w >> BigInt(32);                  // 上位32bit
+    /* const w_high = board_w >> BigInt(32);                  // 上位32bit
     const w_low  = board_w & BigInt(0xFFFFFFFF);           // 下位32bit
 
     const w_high_num = Number(w_high);
@@ -182,18 +188,42 @@ async function runMinimax(board_w, board_b, lv, pl) {
     const b_low  = board_b & BigInt(0xFFFFFFFF);           // 下位32bit
 
     const b_high_num = Number(b_high);
-    const b_low_num  = Number(b_low);
+    const b_low_num  = Number(b_low); */
 
     const act_ptr = Module._malloc(8);    // 2 int
     const score_ptr = Module._malloc(4);  // 1 float
 
-    console.log(w_high,w_low,b_high,b_low);
+    //console.log(w_high,w_low,b_high,b_low);
 
     try {
+        const white_num = countBits(current_white);
+        const black_num = countBits(current_black);
+        const turn = (white_num + black_num)-4+1;
     if(pl==1){
-        await minimax_c(w_high_num,w_low_num, b_high_num,b_low_num, Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+        if(lv==9){
+            if(turn>=46){
+                console.log("turn_final:",turn);
+                await minimax_c(BigInt(board_w),BigInt(board_b), Number(12), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }else{
+                console.log("turn_nomal:",turn);
+                await minimax_c(BigInt(board_w),BigInt(board_b), Number(8), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }
+        }else{
+            await minimax_c(BigInt(board_w),BigInt(board_b), Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+        }
     }else{
-        await minimax_c(b_high_num,b_low_num,w_high_num,w_low_num, Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+        if(lv==9){
+            if(turn>=46){
+                console.log("turn_final:",turn);
+                await minimax_c(BigInt(board_b),BigInt(board_w), Number(12), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }else{
+                console.log("turn_nomal:",turn);
+                await minimax_c(BigInt(board_b),BigInt(board_w), Number(8), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }
+            
+        }else{
+            await minimax_c(BigInt(board_b),BigInt(board_w), Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+        }
     }
     }catch (error) {
         console.error('Error:', error);
@@ -208,11 +238,11 @@ async function runMinimax(board_w, board_b, lv, pl) {
     Module._free(score_ptr);
 
     console.log(`WASM minimax 結果: (${row}, ${col}), score=${score}`);
-    return { row, col, score };
+    return { score,row, col };
 }
 
 
-function calculate_CPU(lv,current_color,white,black){
+async function calculate_CPU(lv,current_color,white,black){
     calculating_ele.style.display = "block";
     //console.log("block");
     let act_str,_;
@@ -224,24 +254,33 @@ function calculate_CPU(lv,current_color,white,black){
         act_str = col_letters[7-act[1]] + ((7-act[0]+1));
     }else{
         if(current_color=="white"){
-            const result = minimax(white,black,Number(lv),alpha=-Infinity,beta=Infinity,maximizing_player=true).toJs();
-            
+            //const result = minimax(white,black,Number(lv),alpha=-Infinity,beta=Infinity,maximizing_player=true).toJs();
+            const result2 = await runMinimax(white,black,lv,1);
+            console.log(result2);
             console.log("white");
-            
+            row = Number(result2.row);
+            col = Number(result2.col);
+            act_str = convert_act_bit2str([row,col]);
                 /* console.log(result2);
                 row = Number(result2.row);
                 col = Number(result2.col);
                 console.log(row,col);
                 act_str = convert_act_bit2str([row,col]);
-                console.log(act_str);
-                const place = act_str; */
+                console.log(act_str); */
+                //const place = act_str;
     
-            [_,act_str] = result;
+            //[_,act_str] = result2;
             //[_,act_str] = result;
         }else{
-            const result = minimax(black,white,Number(lv),alpha=-Infinity,beta=Infinity,maximizing_player=true).toJs();
+            const result2 = await runMinimax(white,black,lv,-1);
+            console.log(result2);
             console.log("black");
-            [_,act_str] = result;
+            row = Number(result2.row);
+            col = Number(result2.col);
+            act_str = convert_act_bit2str([row,col]);
+            /* const result = minimax(black,white,Number(lv),alpha=-Infinity,beta=Infinity,maximizing_player=true).toJs();
+            console.log("black");
+            [_,act_str] = result; */
             
             //[_,act_str] = result;
         }
@@ -254,9 +293,10 @@ function calculate_CPU(lv,current_color,white,black){
     [current_white,current_black,flips] = result;
     current_white = BigInt(current_white);
     current_black = BigInt(current_black);
-    console.log("none");
+    //console.log("none");
     calculating_ele.style.display = "none";
-    update_turn(current_white,current_black);
+    //console.log("flips:",flips)
+    update_turn(current_white,current_black,act_str,flips);
     //console.log(act_str);
     
 }
@@ -381,7 +421,7 @@ othello_board.addEventListener("click",e=>{
         current_black = BigInt(current_black);
         //console.log(current_white);
         //console.log(current_black);
-        update_turn(current_white,current_black);
+        update_turn(current_white,current_black,place,flips);
     }
 })
 
@@ -525,3 +565,31 @@ function scaleToFit() {
 
 window.addEventListener("load", scaleToFit);
 window.addEventListener("resize", scaleToFit);
+
+document.getElementById("share-btn").addEventListener("click", () => {
+    const white_num = countBits(current_white);
+    const black_num = countBits(current_black);
+    let winner;
+    if(pl_color==1){
+        winner = 
+            black_num > white_num ? `黒(CPU Lv${cpu_LV})に敗北...` :
+            white_num > black_num ? `黒(CPU Lv${cpu_LV})に勝利!!` :
+            `黒(CPU${cpu_LV})と引き分け！`;
+    }else if(pl_color==-1){
+        winner = 
+            black_num > white_num ? `白(CPU Lv${cpu_LV})に勝利!!` :
+            white_num > black_num ? `白(CPU Lv${cpu_LV})に敗北...` :
+            `黒(CPU${cpu_LV})と引き分け！`;
+    }else if(pl_color==0){
+        winner = 
+            black_num > white_num ? `黒が勝利!!` :
+            white_num > black_num ? `白が勝利!!` :
+            `引き分け！`;
+    }
+    const text = `●オセロ対戦結果◯\n黒：${black_num}枚　白：${white_num}枚で\n${winner}\n@e_Coach_AI`;
+    const hashtags = "オセロ\n,対戦ゲーム\n,e_Coach_AI\n";
+    const url = "\nhttps://e-coach-ai.com/play_othello.html\n";
+    const tweetUrl =
+    `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&hashtags=${encodeURIComponent(hashtags)}&url=${encodeURIComponent(url)}`;
+    window.open(tweetUrl, "_blank");
+})

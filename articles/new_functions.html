@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css" type="text/css">
+    <link rel="stylesheet" href="../style_index.css" type="text/css">
+    <meta property="og:image" content="https://e-coach-ai.com/articles/new_functions_imgs/thumb_new_func.png">
+    <meta property="og:description" content="オセロでCPUと対戦できる機能にアップデートを加えました。">
+    <meta property="og:title" content="オセロゲーム機能アップデートのお知らせ">
+    <meta property="og:image:width" content="960">
+    <meta property="og:image:height" content="510">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://e-coach-ai.com/articles/procon1.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@e_Coach_AI">
+    <title>オセロゲーム機能アップデートのお知らせ</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
+     crossorigin="anonymous"></script>
+     <link rel="apple-touch-icon" href="../imgs\favicon.ico">
+     <link rel="icon" href="../imgs\favicon.ico">
+</head>
+<body>
+    <div id="head_nav">
+        <div id="header">
+            <a href="../index.html"><img src="../imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
+        </div>
+        <nav>
+            <a href="../index.html">ホーム</a>
+            <a href="../list.html">記事一覧</a>
+            <a href="../play_othello.html">オセロゲーム</a>
+        </nav>
+    </div>
+    <div  class="main_title">
+        <h1>オセロゲーム機能アップデート</h1>
+    </div>
+    <div class="main_content">
+        <h2 id="theme">オセロ対戦機能がちょっと使いやすくなりました</h2>
+        <p id="intro">タイトルにもあるとおり、本サイトにて提供しているオセロゲーム機能にアップデートを行いました。<br>
+            今回はその内容を紹介したいと思います。
+        </p>
+        <img src="../articles/new_functions_imgs/thumb_new_func.png" id="thumb_nail" alt="このページのサムネイル。">
+        <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="39fee66d53fcb638473cc0c0ffce024f" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "39fee66d53fcb638473cc0c0ffce024f",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+        <h3 id="1">直前に石を置いたマス、ひっくり返ったマスがわかるように</h3>
+        <p>
+            <img src="../articles/new_functions_imgs/image1.png" alt="新機能を示すスクリーンショット。直前に石を置いたマスの背景が濃い灰色に、ひっくり返された石のマスの背景が薄い灰色になっている。">
+        </p>
+        <h4>石を置いたマスの背景は濃い灰色に</h4>
+        <p>
+            上に示した画像のように、直前に石を置いたマスの背景が濃い灰色になるようになりました。<br>
+            これにより、対局の流れを把握しやすくなります。
+        </p>
+        <h4>ひっくり返されたマスの背景は薄い灰色に</h4>
+        <p>
+            同じく示された画像のように、直前にひっくり返されたマスの背景は薄い灰色になるようになりました。
+            こちらの機能と上記の機能により、CPUによりすぐに盤面を更新されたとしても状況の把握がしやすくなります。
+        </p>
+        <h3 id="2">計算が超高速化！</h3>
+        <p>
+            今まで、レベル5などになるとCPUが1手打つのに1分以上かかってしまっている場合がありましたが、この問題を解決いたしました。<br>
+            これにより、快適に対戦をお楽しみいただけます。
+        </p>
+        <h4>それに伴う新レベル解放</h4>
+        <p>
+            今まではCPUのレベルとして0~5までを提供しておりました。しかし、今回の高速化に伴い新たなCPUのレベルを提供できるようになりました。<br>
+            このサイトのオセロゲームにおける「レベル」とは、基本的にαβ法の先読みの手数のことを指しています。この数が増えるほど計算量が増加するため、さらなるレベルの解放には計算の高速化が必要でした。<br>
+            しかしついにそれが実現したため、新たなレベル<b>6~9</b>を解放いたします。<br>
+            さらなるオセロ上達に向けてぜひ挑戦してみてください！！<br>
+            ※Lv9は通常は8手読みですが、終盤はさらに深くまで先読みします。
+            <img src="../articles/new_functions_imgs/image2.png" alt="新たなレベルが追加されたレベル選択画面">
+        </p>
+        <h3 id="3">評価関数の高性能化</h3>
+        <p>
+            そしてさらに、シンプルに評価関数を強化いたしました。<br>
+            これにより、今までと同じレベルでも若干前より強くなっている可能性がございます。<br>
+            新たなレベルにもぜひ挑戦しましょう！<br>
+            具体的な強化点に関しては私の受験が終わったら記事にしたいと思います。
+        </p>
+        <h3 id="4">X(旧Twitter)での共有機能が追加！</h3>
+        <p>
+            対局の結果をX(旧Twitter)で共有できるようになりました。<br>
+            自分の成長の過程をSNSに残しましょう！
+        </p>
+        <h3 id="5">さいごに</h3>
+        <p>
+            いかがでしたでしょうか？
+            これらの新機能により、より快適なオセロ体験が可能になること間違いなしです！<br>
+            さらなる上達に向けて我々が販売している「e-Coach_AI」もぜひご活用ください！！<br>
+            e-Coach_AIの紹介は↓こちら↓
+        </p>
+        <a href="../index.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        <p>また、アップデートを行ったオセロの対戦ページは↓こちら↓</p>
+        <a href="../play_othello.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="305a1205361b0f40d49aae13519ccbea" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "305a1205361b0f40d49aae13519ccbea",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+        <p><br><br>次の記事↓</p>
+        <h1 id="latest">この記事は最新です</h1>
+        <p>前回の記事↓</p>
+        <a href="../articles/procon1.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        
+    </div>
+    <div id="fotter">
+                <a id="x" href="https://x.com/e_Coach_AI" target="_blank">
+                    <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
+                </a>
+                <p>&copy; 2025 ЯAMUNE</p>
+            </div>
+    <script src="../article.js"></script>
+</body>
+</html>

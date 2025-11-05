@@ -3,6 +3,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+/* #include <time.h>
+#include <omp.h>  */
+
+#define first_board_w 68853694464ULL
+#define first_board_b 34628173824ULL
 
 uint64_t white,black;
 #define LEFT_MASK 0x7F7F7F7F7F7F7F7F// 左端を0にする
@@ -11,7 +16,13 @@ uint64_t white,black;
 
 #define FALSE   0
 #define TRUE    1
-
+#define BOARD_SIZE 64
+#define EMPTY 0
+#define BLACK 1
+#define WHITE 2
+#define FLAG_EXACT 0
+#define FLAG_LOWERBOUND 1
+#define FLAG_UPPERBOUND 2
 typedef struct {
     int direction;
     uint64_t mask;
@@ -34,6 +45,7 @@ typedef struct{
     uint64_t newBoardW;
     uint64_t newBoardB;
 }MoveOrder;
+
 
 
 int DIRECTIONS[8] = {
@@ -799,6 +811,90 @@ int scores[64] = {
     -12, -20,  -3,  -3,  -3,  -3, -20,-12,
      30, -12,   0,  -1,  -1,   0, -12, 30
 };
+uint64_t masks[56] = {
+    1161999622361579520ULL,
+    2151686160ULL,
+    16909320ULL,
+    577588855528488960ULL,
+    580999813328273408ULL,
+    550831656968ULL,
+    4328785936ULL,
+    1155177711073755136ULL,
+    290499906672525312ULL,
+    141012904183812ULL,
+    1108169199648ULL,
+    2310355422147575808ULL,
+    145249953336295424ULL,
+    36099303471055874ULL,
+    283691315109952ULL,
+    4620710844295151872ULL,
+    72624976668147840ULL,
+    9241421688590303745ULL,
+    72624976668147840ULL,
+    9241421688590303745ULL,
+    71776119061217280ULL,
+    4629771061636907072ULL,
+    65280ULL,
+    144680345676153346ULL,
+    280375465082880ULL,
+    2314885530818453536ULL,
+    16711680ULL,
+    289360691352306692ULL,
+    1095216660480ULL,
+    1157442765409226768ULL,
+    4278190080ULL,
+    578721382704613384ULL,
+    18393263828134526976ULL,
+    9277556521783312512ULL,
+    17151ULL,
+    72903122791498497ULL,
+    17940089115630370816ULL,
+    827867578560ULL,
+    7967ULL,
+    217020518514032640ULL,
+    16204197749883666432ULL,
+    14737632ULL,
+    460551ULL,
+    506381179683864576ULL,
+    17924467806326226944ULL,
+    551911735544ULL,
+    4311810847ULL,
+    2234630943929270272ULL,
+    13635773771771019264ULL ,
+    9223583970954838144ULL ,
+    15549ULL ,
+    72060905508241409ULL ,
+    17357084619874238464ULL ,
+    2160124144ULL ,
+    16975631ULL ,
+    1082837538235744256ULL
+};
+float counts[56] = {
+        4 ,4 ,4 ,4 ,
+        5 ,5 ,5 ,5 ,
+        6 ,6 ,6 ,6 ,
+        7 ,7 ,7 ,7 ,
+        8 ,8 ,8 ,8 ,
+        8 ,8 ,8 ,8 ,
+        8 ,8 ,8 ,8 ,
+        8 ,8 ,8 ,8 ,
+        10 ,10 ,10 ,10 ,
+        10 ,10 ,10 ,10 ,
+        9 ,9 ,9 ,9 ,
+        10 ,10 ,10 ,10 ,
+        8 ,8 ,8 ,8 ,
+        10 ,10 ,10 ,10
+};
+
+float position_point(uint64_t board){
+    float score = 0;
+    for(int i=0;i<56;i++){
+        if((board&masks[i])==masks[i]){
+            score += counts[i];
+        }
+    }
+    return score;
+}
 
 void eval_bitboard_score(uint64_t board_w,uint64_t board_b,int *white_score,int *black_score){
     *black_score = 0;
@@ -813,7 +909,73 @@ void eval_bitboard_score(uint64_t board_w,uint64_t board_b,int *white_score,int 
     }
 }
 
-float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
+float calc_spread_penalty(uint64_t board) {
+    int count = 0;
+    float sum_x = 0, sum_y = 0;
+    for (int i = 0; i < 64; i++) {
+        if ((board >> i) & 1) {
+            int x = i % 8, y = i / 8;
+            sum_x += x;
+            sum_y += y;
+            count++;
+        }
+    }
+    if (count == 0) return 0;
+    float cx = sum_x / count, cy = sum_y / count;
+
+    float var = 0;
+    for (int i = 0; i < 64; i++) {
+        if ((board >> i) & 1) {
+            int x = i % 8, y = i / 8;
+            float dx = x - cx, dy = y - cy;
+            var += dx * dx + dy * dy;
+        }
+    }
+    return var/count;
+}
+
+void find_connected_open_stone(uint64_t board_w,uint64_t board_b, uint64_t empty, float *count, float *count_open, float *touch_other) {
+    *count = 0;
+    *count_open = 0;
+    *touch_other = 0;
+    for (int i = 0; i < 64; i++) {
+        if ((board_w >> i) & 1) {
+            uint64_t pos = ((uint64_t)1) << i;
+
+            uint64_t neighbor_mask =
+                ((pos << 1) & RIGHT_MASK) |  // 左
+                ((pos >> 1) & LEFT_MASK)  |  // 右
+                (pos << 8)                |  // 上
+                (pos >> 8)                |  // 下
+                ((pos << 7) & RIGHT_MASK) |  // 左上
+                ((pos << 9) & LEFT_MASK)  |  // 右上
+                ((pos >> 7) & LEFT_MASK)  |  // 右下
+                ((pos >> 9) & RIGHT_MASK);   // 左下
+
+            uint64_t touch_other_pairs = neighbor_mask & board_b;
+            uint64_t connected_pairs = neighbor_mask & board_w;
+            uint64_t open_stones = neighbor_mask & empty;
+
+            *count += (float)bit_count(connected_pairs);
+            *count_open += (float)bit_count(open_stones);
+            *touch_other += (float)bit_count(touch_other_pairs);
+        }
+    }
+}
+
+
+uint64_t edge_pattern[8] = {
+    9223513326254850048ULL,
+    190ULL,
+    282578800148481ULL,
+    9007199254740992000ULL,
+    36170086419005568ULL,
+    125ULL,
+    72058697861366016ULL,
+    13690942867206307840ULL
+};
+
+float evaluate_board_origin(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
     int con_weight = 100;
     uint64_t empty =  ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF;
     int turn = 64 - bit_count(empty);
@@ -976,7 +1138,264 @@ float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float fal
     return ((float)(score*10 + con_score*con_weight*10 + edge_point*10) / 10.0f) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90.0f*alpha);
     //return (float)((score*10 + con_score*con_weight*10 + edge_point*10)/10) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90*alpha);
 }
+float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
 
+    float con_weight = 100;
+    float edge_weight = 0.47;
+    float dis_num_weight = 13.62;
+    float board_weight = 3.77;
+    float dis_sum_weight = -3.12;
+    float legal_dis_weight = -6.76;
+    float connect_weight = -54;
+    float spread_weight = -23.14;
+    float open_weight = -33.01;
+    float alpha_start = 59.9;
+    float alpha_speed = 46.93;
+    float beta_start = 1.77;
+    float beta_speed = 4.70;
+    float pass_weight = -47.64;
+    float touch_weight = 14.07;
+    float pattern_weight = 0.02;
+    float connect_weight2 = -22.16;
+    float cx_point_weight = 0.82;
+    float corner_point_weight = -3.42;//58
+
+
+    //con_weight = 100;
+    uint64_t empty =  ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF;
+    int turn = 64 - bit_count(empty);
+    float alpha = nmin(nmax(0,(turn -alpha_start) / alpha_speed),1);
+    float beta = nmin(nmax(0,(turn -beta_start) / beta_speed),1);
+
+    float spread_score = 0,open_stones_score = 0,connected_pairs_score = 0;
+    float b_snum = bit_count(board_b);
+    float w_snum = bit_count(board_w);
+    float connect_w_num,connect_b_num,open_w_num,open_b_num,touch_w2b,touch_b2w,touch_other;
+    find_connected_open_stone(board_w,board_b,empty,&connect_w_num,&open_w_num,&touch_w2b);
+    find_connected_open_stone(board_b,board_w,empty,&connect_b_num,&open_b_num,&touch_b2w);
+    if(beta!=1){
+        
+
+        
+        
+
+        float spread_w = calc_spread_penalty(board_w);
+        float spread_b = calc_spread_penalty(board_b);
+
+        
+
+        float open_stones_w_num,touch_w2b_pone,touch_b2w_pone,connected_pairs_w_num,connected_pairs_b_num;
+        if(w_snum==0){
+            open_stones_w_num = 0;
+            touch_w2b_pone = 0;
+            connected_pairs_w_num = 0;
+        }else{
+            open_stones_w_num = open_w_num/w_snum;
+            touch_w2b_pone = touch_w2b/w_snum;
+            connected_pairs_w_num = connect_w_num/w_snum;
+        }
+        float open_stones_b_num;
+        if(b_snum==0){
+            open_stones_b_num = 0;
+            touch_b2w_pone = 0;
+            connected_pairs_b_num = 0;
+        }else{
+            open_stones_b_num = open_b_num/b_snum;
+            touch_b2w_pone = touch_b2w/b_snum;
+            connected_pairs_b_num = connect_b_num/b_snum;
+        }
+
+        
+        open_stones_score = -open_stones_w_num + open_stones_b_num;
+        spread_score = -spread_w + spread_b;
+        touch_other = touch_w2b_pone - touch_b2w_pone;
+        connected_pairs_score = connected_pairs_w_num - connected_pairs_b_num;
+    }
+    
+
+    
+    RowCol legal_list_w[64];
+    //RowCol *legal_list_w = malloc(sizeof(RowCol) * 64);
+    //RowCol *legal_list_b = malloc(sizeof(RowCol) * 64);
+    int legal_list_size_w=0;
+    get_legal_square("white",board_w,board_b,legal_list_w,&legal_list_size_w);
+    //printf("\nwhite_legal_finish");
+    RowCol legal_list_b[64];
+    int legal_list_size_b=0;
+    //printf("\nblack_legal_start");
+    get_legal_square("black",board_w,board_b,legal_list_b,&legal_list_size_b);
+    //printf("\nlegal_list_size_b: %d\n", legal_list_size_b);
+    //printf("\nblack_finish");
+    //fflush(stdout);
+    //printf("\ndef_cx");
+    //fflush(stdout);
+    int w_cx = 0,b_cx = 0,index=0;
+    uint64_t w_legal=0,b_legal=0,legal_bit;
+    //printf("\ndef_cx2");
+    //fflush(stdout);
+    for(int idx=0;idx<legal_list_size_w;idx++){
+        RowCol legal = legal_list_w[idx];
+        int row=legal.row,col=legal.col; 
+        index = row*8 + col;
+        legal_bit = ((uint64_t)1)  << index;
+        w_legal |= legal_bit;
+        for(int cx_idx=0;cx_idx<12;cx_idx++){
+            RowCol cx = cx_zone[cx_idx];
+            int cx_row = cx.row,cx_col = cx.col;
+            if(cx_row == row && cx_col == col){
+                w_cx++;
+            }
+        }
+    }
+    //fflush(stdout);
+    for(int idx=0;idx<legal_list_size_b;idx++){
+        RowCol legal = legal_list_b[idx];
+        int row=legal.row,col=legal.col;
+        index = row*8 + col;
+        legal_bit = ((uint64_t)1)  << index;
+        b_legal |= legal_bit;
+        for(int cx_idx=0;cx_idx<12;cx_idx++){
+            RowCol cx = cx_zone[cx_idx];
+            int cx_row = cx.row,cx_col = cx.col;
+            if(cx_row == row && cx_col == col){
+                b_cx++;
+            }
+        }
+    }
+    //fflush(stdout);
+    float zennmetu_keikoku = 0;
+    if(bit_count(board_w) <= 2&&turn>=10){
+        zennmetu_keikoku = -4500;
+    }
+    //fflush(stdout);
+    float edge_point_w = 0;
+    float edge_point_b = 0;
+    float edge_point,dis_num;
+    uint64_t m_e_list[4] = {m1_e,m2_e,m3_e,m4_e};
+    uint64_t m_c_list[4] = {m1_c,m2_c,m3_c,m4_c};
+    uint64_t c_w=0,c_b=0;
+    if(turn>=30){
+        get_confirmed_stones(board_w,board_b,&c_w,&c_b);
+    }else{
+        get_confirmed_stones_lite(board_w,board_b,&c_w,&c_b);
+    }
+    
+    int c_w_num=bit_count(c_w);
+    int c_b_num=bit_count(c_b);
+    float con_score = (c_w_num - c_b_num);
+    //fflush(stdout);
+    int w_corner_num=0,b_corner_num=0;
+    for(int i=0;i<4;i++){
+        int dec_point=0,add_point=0;
+
+        int w_num=0,b_num=0;
+
+        w_num = bit_count(board_w&m_e_list[i]);
+        b_num = bit_count(board_b&m_e_list[i]);
+        
+        uint64_t w_corner = board_w&m_c_list[i];
+        uint64_t b_corner = board_b&m_c_list[i];
+        uint64_t w_corner_legal = w_legal&m_c_list[i];
+        uint64_t b_corner_legal = b_legal&m_c_list[i];
+        int b_c_num = bit_count(b_corner);
+        int w_c_num = bit_count(w_corner);
+        w_corner_num += w_c_num;
+        b_corner_num += b_c_num;
+        //printf("\nw:%d\nb:%d",w_num,b_num);
+        if(w_num==6){
+            int dec = 0;
+            if(b_c_num==1&&w_c_num==0){
+                dec_point += 10*6*con_weight* 4/5/10;
+                dec = 1;
+            }
+            if(bit_count(b_corner_legal)>0){
+                dec_point += 10*6*con_weight* 3/5/10;
+                dec = 1;
+            }
+            if(dec==0){
+                add_point += 10*6*con_weight* 4/5/10;
+            }
+        }
+        for(int k=0;k<8;k++){
+            if((((m_e_list[i]|m_c_list[i])&board_w)&edge_pattern[k])==edge_pattern[k]&&w_num==5&&w_c_num==1&&b_c_num==0){
+                dec_point +=8*con_weight*0.9f;
+            }
+        }
+        //printf("\nadd:%d\ndec:%d",add_point,dec_point);
+        edge_point_w += add_point;
+        edge_point_w -= dec_point;
+        dec_point = 0;
+        add_point = 0;
+        if(b_num == 0&&w_c_num==0&&b_c_num==0){
+            edge_point_w += w_num*con_weight*0.2f;
+        }else if(w_num<=6&&b_c_num==1&&w_c_num==0){
+            edge_point_w -= w_num*con_weight*0.9f;
+        }
+        if(b_num==6){
+            int dec = 0;
+            if(w_c_num==1&&b_c_num==0){
+                dec_point += 10*6*con_weight* 4/5/10;
+                dec = 1;
+                //printf("\n1:%f",10*6*con_weight* (4.0/5)/10);
+            }
+            if(bit_count(w_corner_legal)>0){
+                dec_point += 10*6*con_weight* 3/5/10;
+                dec = 1;
+                //printf("\n2:%f",10*6*con_weight* (3.0/5)/10);
+            }
+            if(dec==0){
+                add_point += 10*6*con_weight* 4/5/10;
+                //printf("\n3:%f",10*6*con_weight* (4.0/5)/10);
+            }
+        }
+        for(int k=0;k<8;k++){
+            if((((m_e_list[i]|m_c_list[i])&board_b)&edge_pattern[k])==edge_pattern[k]&&b_num==5&&b_c_num==1&&w_c_num==0){
+                dec_point += 8*con_weight*0.9f;
+            }
+        }
+        edge_point_b += add_point;
+        edge_point_b -= dec_point;
+        if (w_num==0&&w_c_num==0&&b_c_num==0){
+            edge_point_b += b_num*con_weight*0.2f;
+            //printf("\nnum:%d",b_num*con_weight*1/20);
+        }else if(b_num<=6&&w_c_num==1&&b_c_num==0){
+            edge_point_b -= b_num*con_weight*0.9f;
+        }
+    }
+    //fflush(stdout);
+    edge_point = edge_point_w - edge_point_b;
+    //printf("\nw:%f\nb:%f",edge_point_w,edge_point_b);
+    dis_num = legal_list_size_w - legal_list_size_b -(w_cx-b_cx)*cx_point_weight+(w_corner_num-b_corner_num)*corner_point_weight;
+    //printf("\n%d,%d,%d,%d",legal_list_size_w , legal_list_size_b ,w_cx,b_cx);
+    int white_score=0,black_score=0;
+    eval_bitboard_score(board_w,board_b,&white_score,&black_score);
+
+    float board_score = white_score - black_score*1.5f;
+    float pattern_point = 0;
+    pattern_point = (position_point(board_w) - position_point(board_b))*con_weight*pattern_weight;
+    /* int b_snum = bit_count(board_b);
+    int w_snum = bit_count(board_w); */
+    float lose_keikoku = 0;
+    //fflush(stdout);
+    if(legal_list_size_b==0&&legal_list_size_w==0&&b_snum > w_snum){
+        lose_keikoku = -1000;
+    }
+    float pass_bonus = false_pass-true_pass;
+    float score = (1-alpha) * (dis_num*dis_num_weight + board_score*board_weight + (touch_other*touch_weight+connected_pairs_score*connect_weight+open_stones_score*open_weight + spread_score*spread_weight)*(1-beta)) + alpha * ((w_snum-b_snum)*con_weight*dis_sum_weight+(legal_list_size_w-legal_list_size_b)*legal_dis_weight+connected_pairs_score*connect_weight2);
+    //float score = (1-alpha) * (dis_num*300/100 +  board_score*200/100) + alpha * ((w_snum-b_snum)*5000/100+(legal_list_size_w-legal_list_size_b)*400/100);
+
+    //fflush(stdout);
+
+
+    //printf("\nscore:%f\ncon_score:%d\nedge_point:%f\ndis_num:%f\nalpha:%f\ndis:%d",board_score,con_score,edge_point,dis_num,alpha,w_snum-b_snum);
+    //printf("\naa:%f",(score*10 + con_score*con_weight*10 + edge_point*10)/10);
+    //printf("\naa:%d",zennmetu_keikoku + lose_keikoku + pass_bonus*90*alpha);
+    //free(legal_list_w);
+    //free(legal_list_b);
+    //printf("\ndef_cx3");
+    return ((float)(score + con_score*con_weight + edge_point*edge_weight)) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*pass_weight) + pattern_point;
+    //return (float)((score*10 + con_score*con_weight*10 + edge_point*10)/10) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90*alpha);
+}
 
 int is_terminal(uint64_t board_w,uint64_t board_b){
     //if get_legal_square("white",board) == [] and get_legal_square("black",board.copy()*-1) == []:
@@ -984,6 +1403,28 @@ int is_terminal(uint64_t board_w,uint64_t board_b){
         return TRUE;
     }else{
         return FALSE;
+    }
+}
+void insertion_sort_desc(MoveOrder *arr, int n) {
+    for (int i = 1; i < n; i++) {
+        MoveOrder key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j].score < key.score) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
+    }
+}
+void insertion_sort_asc(MoveOrder *arr, int n) {
+    for (int i = 1; i < n; i++) {
+        MoveOrder key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j].score > key.score) {
+            arr[j + 1] = arr[j];
+            j--;
+        }
+        arr[j + 1] = key;
     }
 }
 int compare_move_order_desc(const void *a, const void *b) {
@@ -1003,7 +1444,32 @@ int compare_move_order_asc(const void *a, const void *b) {
     return 0;
 }
 static int call_count = 0;
+#define MAX_DEPTH 64
 
+RowCol killer_moves[3][MAX_DEPTH];
+void add_killer_move(RowCol move, int depth) {
+    if (killer_moves[0][depth].row != move.row || killer_moves[0][depth].col != move.col) {
+        killer_moves[2][depth] = killer_moves[1][depth];
+        killer_moves[1][depth] = killer_moves[0][depth];
+        killer_moves[0][depth] = move;
+    }
+}
+void prioritize_killer_moves(MoveOrder *move_order_list, int size, int depth) {
+    for (int k = 0; k < 3; ++k) {
+        RowCol killer = killer_moves[k][depth];
+        for (int i = 0; i < size; ++i) {
+            if (move_order_list[i].move.row == killer.row &&
+                move_order_list[i].move.col == killer.col) {
+                // 先頭に移動
+                MoveOrder tmp = move_order_list[i];
+                for (int j = i; j > 0; --j)
+                    move_order_list[j] = move_order_list[j - 1];
+                move_order_list[0] = tmp;
+                break;
+            }
+        }
+    }
+}
 void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,int maximizing_player,int true_pass,int false_pass,RowCol *act,float *score){
     /* call_count++;
     printf("call #%d, depth=%d\n", call_count, depth);
@@ -1042,6 +1508,9 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
         //printf("\nt:%d",true_pass);
         //printf("\nf:%d",false_pass);
         *score = evaluate_board(board_w,board_b,true_pass,false_pass);
+        if (*score > 999999) *score = 999999;
+        if (*score < -999999) *score = -999999;
+        //printf("score_ha:%f\n",*score);
         fflush(stdout);
         //printf("\nscore:%f\n",*score);
         //free(legal_list_w);
@@ -1070,6 +1539,7 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
             uint64_t new_board_w = board_w,new_board_b = board_b;
             
             fflush(stdout);
+            //printf("start_flip_TRUE\n");
             identify_flip_stone("white",&new_board_w,&new_board_b,move,1,flip_list,&flip_list_size);
             RowCol result_act2;
             float result_score2;
@@ -1077,10 +1547,15 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
             printf(">>> Trying move (%d, %d) at depth=%d\n", move.row, move.col, depth);
             printf(">>> New W: 0x%016llX\n", new_board_w);
             printf(">>> New B: 0x%016llX\n", new_board_b); */
-            minimax(new_board_w,new_board_b,0,alpha,beta,FALSE,true_pass,false_pass,&result_act2,&result_score2);
-            move_order_list[i] = (MoveOrder){result_score2,move,new_board_w,new_board_b};
+            //minimax(new_board_w,new_board_b,0,alpha,beta,FALSE,true_pass,false_pass,&result_act2,&result_score2);
+            int white_score=0,black_score=0;
+            eval_bitboard_score(new_board_w,new_board_b,&white_score,&black_score);
+            float board_score = white_score - black_score*1.5f;
+            move_order_list[i] = (MoveOrder){board_score,move,new_board_w,new_board_b};
         }
-        qsort(move_order_list, move_oder_list_size, sizeof(MoveOrder), compare_move_order_desc);//maximizing_player＝=Falseでは昇順に
+        //qsort(move_order_list, move_oder_list_size, sizeof(MoveOrder), compare_move_order_desc);//maximizing_player＝=Falseでは昇順に
+        insertion_sort_desc(move_order_list, move_oder_list_size);
+        prioritize_killer_moves(move_order_list, move_oder_list_size, depth);
         for(int i=0;i<legal_size;i++){
             RowCol move = move_order_list[i].move;
             uint64_t new_board_w = move_order_list[i].newBoardW;
@@ -1088,8 +1563,9 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
 
             float eval;
             RowCol act2;
-
+            
             minimax(new_board_w,new_board_b,depth-1,alpha,beta,FALSE,true_pass,false_pass,&act2,&eval);
+            //printf("return_eval_TRUE\n");
             if (eval > max_eval){
                 max_eval = eval;
                 best_move = move;
@@ -1099,9 +1575,12 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
                 break;
             }
         }
-        printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
+        //printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
         *act = best_move;
         *score = max_eval;
+        if (*score > 999999) *score = 999999;
+        if (*score < -999999) *score = -999999;
+        //printf("αβ_return_eval_TRUE\n");
         //free(move_order_list);
         //free(legal_list_w);
         //free(legal_list_b);
@@ -1124,13 +1603,21 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
             RowCol flip_list[64];
             int flip_list_size;
             uint64_t new_board_w = board_w,new_board_b = board_b;
+            //rintf("start_flip_FALSE\n");
             identify_flip_stone("black",&new_board_w,&new_board_b,move,1,flip_list,&flip_list_size);
             RowCol result_act2;
             float result_score2;
-            minimax(new_board_w,new_board_b,0,alpha,beta,TRUE,true_pass,false_pass,&result_act2,&result_score2);
-            move_order_list[i] = (MoveOrder){result_score2,move,new_board_w,new_board_b};
+            //minimax(new_board_w,new_board_b,0,alpha,beta,TRUE,true_pass,false_pass,&result_act2,&result_score2);
+            int white_score=0,black_score=0;
+            eval_bitboard_score(new_board_w,new_board_b,&white_score,&black_score);
+
+            float board_score = white_score - black_score*1.5f;
+            //printf("return_eval_FALSE\n");
+            move_order_list[i] = (MoveOrder){board_score,move,new_board_w,new_board_b};
         }
-        qsort(move_order_list, move_oder_list_size, sizeof(MoveOrder), compare_move_order_asc);
+        //qsort(move_order_list, move_oder_list_size, sizeof(MoveOrder), compare_move_order_asc);
+        insertion_sort_asc(move_order_list, move_oder_list_size);
+        prioritize_killer_moves(move_order_list, move_oder_list_size, depth);
         for(int i=0;i<legal_size;i++){
             RowCol move = move_order_list[i].move;
             uint64_t new_board_w = move_order_list[i].newBoardW;
@@ -1138,7 +1625,7 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
 
             float eval;
             RowCol act2;
-
+            
             minimax(new_board_w,new_board_b,depth-1,alpha,beta,TRUE,true_pass,false_pass,&act2,&eval);
             //printf("\nact:(%d,%d),score:%f",move.row,move.col,eval);
             if (eval < min_eval){
@@ -1152,10 +1639,13 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
         }
         *act = best_move;
         *score = min_eval;
+        if (*score > 999999) *score = 999999;
+        if (*score < -999999) *score = -999999;
+        //printf("αβ_return_eval_FALSE\n");
         //free(move_order_list);
         //free(legal_list_w);
         //free(legal_list_b);
-        printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
+        //printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
         return;
     }
 }
@@ -1170,10 +1660,84 @@ void minimax_split(uint32_t board_w_high, uint32_t board_w_low,
     printf("Board B: 0x%016llX\n", board_b);
     minimax(board_w, board_b, depth, alpha, beta, maximizing_player, true_pass, false_pass, &*act, &*score);
 }
+/* #define RAND_R_CUSTOM_MAX 0x7fffffff
+unsigned int rand_r_custom(unsigned int *seed) {
+    *seed = (*seed * 1103515245 + 12345) & RAND_R_CUSTOM_MAX;
+    return *seed;
+}
+float rand_float2(float a, float b) {
+    static _Thread_local unsigned int seed = 0;
+    if (seed == 0) {
+        seed = (unsigned int)time(NULL) ^ omp_get_thread_num();
+    }
+    return a + ((float)rand_r_custom(&seed) / (float)RAND_R_CUSTOM_MAX) * (b - a);
+}
+void progress_game_random_simple(int random_color,int *winner,float *diff_stone){//1が先手(黒)
+    uint64_t current_w = first_board_w;
+    uint64_t current_b = first_board_b;
+    int current_color = -1;
+    int turn = 0;
+    while (TRUE){
+        RowCol legal_list[64];
+        int legal_list_size;
+        if(current_color == -1){
+            get_legal_square("black",current_w,current_b,legal_list,&legal_list_size);
+        }else{
+            get_legal_square("white",current_w,current_b,legal_list,&legal_list_size);
+        }
 
+        if(legal_list_size==0){
+            current_color *= -1;
+            RowCol legal_list[64];
+            int legal_list_size;
+            if(current_color == -1){
+                get_legal_square("black",current_w,current_b,legal_list,&legal_list_size);
+            }else{
+                get_legal_square("white",current_w,current_b,legal_list,&legal_list_size);
+            }
+            if(legal_list_size==0){
+                break;
+            }
+            continue;
+        }
+        
+        RowCol act;
+        float score;
+        if(current_color==-1&&random_color==1){
+            minimax(current_b,current_w,5,-INFINITY,INFINITY,TRUE,0,0,&act,&score);
+        }else if(current_color==1&&random_color==-1){
+            minimax(current_w,current_b,5,-INFINITY,INFINITY,TRUE,0,0,&act,&score);
+        }else{
+            act = legal_list[(int)rand_float2(0, legal_list_size)];
+        }
+        printf("\nscore:%f",score);
+        RowCol flip_list[64];
+        int flip_list_size;
+        if(current_color==-1){
+            identify_flip_stone("black",&current_w,&current_b,act,0,flip_list,&flip_list_size);
+        }else{
+            identify_flip_stone("white",&current_w,&current_b,act,0,flip_list,&flip_list_size);
+        }
+        turn++;
+        current_color *=-1;
 
+    }
+    int num_b = bit_count(current_b);
+    int num_w = bit_count(current_w);
+    if(num_b>num_w){
+        *winner = 1;//(先手の勝利)
+        *diff_stone = (num_b - num_w) * (60.0f / (turn + 1));
+    }else if(num_w>num_b){
+        *winner = 2;//(後手の勝利)
+        *diff_stone = (num_w - num_b) * (60.0f / (turn + 1));
+    }else{
+        *winner = 0;
+        *diff_stone = 0;
+    }
 
-int main(void){
+} */
+
+int maina(void){
     //printf("LEFT_MASK = %llu\n", LEFT_MASK&RIGHT_MASK);
     RowCol legal_list[64];
     int legal_list_size;
@@ -1183,7 +1747,14 @@ int main(void){
     RowCol flip_list[64];
     int flip_list_size;
 
-
+    /* int winner;
+    float diff_stone;
+    progress_game_random_simple(1,&winner,&diff_stone);
+    printf("\nwinner;%d",winner);
+    printf("\ndiff_disk;%f",diff_stone);
+    progress_game_random_simple(-1,&winner,&diff_stone);
+    printf("\nwinner;%d",winner);
+    printf("\ndiff_disk;%f",diff_stone); */
     
     //identify_flip_stone("black",&white,&black,"d3",1,legal_list,&flip_list_size);
     //printf("\n%llu\n%llu",white,black);
@@ -1195,7 +1766,7 @@ int main(void){
     /* for (int i = 0; i < flip_list_size; i++) {
         printf("\nFlip Stone: Row = %d, Col = %d\n", legal_list[i].row, legal_list[i].col);
     } */
-    white = 68761356292ULL;
+    /* white = 68761356292ULL;
     black = 34829500416ULL;
     white = 18438572485976448056ULL;
     black = 7890112756392387ULL;
@@ -1210,7 +1781,7 @@ int main(void){
     RowCol act;
     float score;
     minimax(white,black,3,-INFINITY,INFINITY,TRUE,0,0,&act,&score);
-    printf("\nfinal act:(%d,%d),score:%f",act.row,act.col,score);
+    printf("\nfinal act:(%d,%d),score:%f",act.row,act.col,score); */
 
     return 0;
 }

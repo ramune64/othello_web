@@ -2122,6 +2122,10 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
         //printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
         *act = best_move;
         *score = max_eval;
+        if (!isfinite(*score)) {
+            printf("⚠️ Non-finite score detected at depth=%d: %f\n", depth, *score);
+            printf("board_w: 0x%016llX, board_b: 0x%016llX\n", board_w, board_b);
+        }
         //free(move_order_list);
         //free(legal_list_w);
         //free(legal_list_b);
@@ -2172,6 +2176,10 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
         }
         *act = best_move;
         *score = min_eval;
+        if (!isfinite(*score)) {
+            printf("⚠️ Non-finite score detected at depth=%d: %f\n", depth, *score);
+            printf("board_w: 0x%016llX, board_b: 0x%016llX\n", board_w, board_b);
+        }
         //free(move_order_list);
         //free(legal_list_w);
         //free(legal_list_b);
@@ -3044,6 +3052,70 @@ void compute_fitness(struct Individual population[], int size) {
         }
     }
 }
+void progress_game_random_simple(int random_color,int *winner,float *diff_stone){//1が先手(黒)
+    uint64_t current_w = first_board_w;
+    uint64_t current_b = first_board_b;
+    int current_color = -1;
+    int turn = 0;
+    while (TRUE){
+        RowCol legal_list[64];
+        int legal_list_size;
+        if(current_color == -1){
+            get_legal_square("black",current_w,current_b,legal_list,&legal_list_size);
+        }else{
+            get_legal_square("white",current_w,current_b,legal_list,&legal_list_size);
+        }
+
+        if(legal_list_size==0){
+            current_color *= -1;
+            RowCol legal_list[64];
+            int legal_list_size;
+            if(current_color == -1){
+                get_legal_square("black",current_w,current_b,legal_list,&legal_list_size);
+            }else{
+                get_legal_square("white",current_w,current_b,legal_list,&legal_list_size);
+            }
+            if(legal_list_size==0){
+                break;
+            }
+            continue;
+        }
+        
+        RowCol act;
+        float score;
+        if(current_color==-1&&random_color==1){
+            minimax(current_b,current_w,5,-INFINITY,INFINITY,TRUE,0,0,&act,&score);
+        }else if(current_color==1&&random_color==-1){
+            minimax(current_w,current_b,5,-INFINITY,INFINITY,TRUE,0,0,&act,&score);
+        }else{
+            act = legal_list[(int)rand_float2(0, legal_list_size)];
+        }
+        printf("\nscore:%f",score);
+        RowCol flip_list[64];
+        int flip_list_size;
+        if(current_color==-1){
+            identify_flip_stone("black",&current_w,&current_b,act,0,flip_list,&flip_list_size);
+        }else{
+            identify_flip_stone("white",&current_w,&current_b,act,0,flip_list,&flip_list_size);
+        }
+        turn++;
+        current_color *=-1;
+
+    }
+    int num_b = bit_count(current_b);
+    int num_w = bit_count(current_w);
+    if(num_b>num_w){
+        *winner = 1;//(先手の勝利)
+        *diff_stone = (num_b - num_w) * (60.0f / (turn + 1));
+    }else if(num_w>num_b){
+        *winner = 2;//(後手の勝利)
+        *diff_stone = (num_w - num_b) * (60.0f / (turn + 1));
+    }else{
+        *winner = 0;
+        *diff_stone = 0;
+    }
+
+}
 void progress_game_random(struct Individual individual1,int random_color,int *winner,float *diff_stone){//1が先手(黒)
     uint64_t current_w = first_board_w;
     uint64_t current_b = first_board_b;
@@ -3783,8 +3855,14 @@ int main(void){
     RowCol flip_list[64];
     int flip_list_size;
 
-
-    
+    int winner;
+    float diff_stone;
+    progress_game_random_simple(1,&winner,&diff_stone);
+    printf("\nwinner;%f",winner);
+    printf("\ndiff_disk;%f",diff_stone);
+    progress_game_random_simple(-1,&winner,&diff_stone);
+    printf("\nwinner;%f",winner);
+    printf("\ndiff_disk;%f",diff_stone);
     //identify_flip_stone("black",&white,&black,"d3",1,legal_list,&flip_list_size);
     //printf("\n%llu\n%llu",white,black);
     //printf(legal_list);
@@ -3795,7 +3873,7 @@ int main(void){
     /* for (int i = 0; i < flip_list_size; i++) {
         printf("\nFlip Stone: Row = %d, Col = %d\n", legal_list[i].row, legal_list[i].col);
     } */
-    white = 68761356292ULL;
+    /* white = 68761356292ULL;
     black = 34829500416ULL;
     white = 8952118241016364412ULL;
     black = 193113006800896ULL;
@@ -3811,11 +3889,11 @@ int main(void){
     float score;
     minimax(white,black,3,-INFINITY,INFINITY,TRUE,0,0,&act,&score);
     printf("\nfinal act:(%d,%d),score:%f",act.row,act.col,score);
-    printf("\nscore:%f",evaluate_board5(white,black,0,0));
+    //printf("\nscore:%f",evaluate_board5(white,black,0,0));
     printf("\nscore:%f",position_point(white));
     
     printf("\nw:%f",calc_spread_penalty(white));
-    printf("\nb:%f",calc_spread_penalty(black));
+    printf("\nb:%f",calc_spread_penalty(black)); */
     //GA_main();
     //GA_init();
     //test_main();
