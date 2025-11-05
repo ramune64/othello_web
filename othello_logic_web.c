@@ -975,7 +975,7 @@ uint64_t edge_pattern[8] = {
     13690942867206307840ULL
 };
 
-float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
+float evaluate_board_old(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
     int con_weight = 100;
     uint64_t empty =  ~(board_w | board_b)& 0xFFFFFFFFFFFFFFFF;
     int turn = 64 - bit_count(empty);
@@ -1138,7 +1138,7 @@ float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float fal
     return ((float)(score*10 + con_score*con_weight*10 + edge_point*10) / 10.0f) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90.0f*alpha);
     //return (float)((score*10 + con_score*con_weight*10 + edge_point*10)/10) + (float)zennmetu_keikoku + (float)lose_keikoku + (float)(pass_bonus*90*alpha);
 }
-float evaluate_board_new(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
+float evaluate_board(uint64_t board_w,uint64_t board_b,float true_pass,float false_pass){
 
     float con_weight = 100;
     float edge_weight = 0.47;
