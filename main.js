@@ -587,7 +587,7 @@ document.getElementById("share-btn").addEventListener("click", () => {
             `引き分け！`;
     }
     const text = `●オセロ対戦結果◯\n黒：${black_num}枚　白：${white_num}枚で\n${winner}\n@e_Coach_AI`;
-    const hashtags = "オセロ\n,対戦ゲーム\n,e_Coach_AI\n";
+    const hashtags = "オセロ\n,e_Coach_AI";
     const url = "\nhttps://e-coach-ai.com/play_othello.html\n";
     const tweetUrl =
     `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&hashtags=${encodeURIComponent(hashtags)}&url=${encodeURIComponent(url)}`;
