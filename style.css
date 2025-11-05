@@ -376,6 +376,7 @@ html, body {
         font-size: 15pt;
     }
     #mode_button_parent{
+        margin-top: 0;
         top: 25%;
         width: 100%;
         & h3{
