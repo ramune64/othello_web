@@ -38,9 +38,14 @@
     <script>
         let wasm_ready = false;
         let minimax_c = null;
+        let minimax_old_c = null;
         var Module = {
             onRuntimeInitialized() {
             minimax_c = Module.cwrap("minimax", null, [
+                "bigint", "bigint", "number", "number", "number",
+                "number", "number", "number", "number", "number"
+            ]);
+            minimax_old_c = Module.cwrap("minimax", null, [
                 "bigint", "bigint", "number", "number", "number",
                 "number", "number", "number", "number", "number"
             ]);
@@ -274,6 +279,9 @@
                 </div>
                 <div class="mode_button" id="lv8">
                     <h2>CPUと(LV8,depth=8)</h2>
+                </div>
+                <div class="mode_button" id="lv8.5">
+                    <h2>CPUと(LV8.5,depth=8+α,<br>old type)</h2>
                 </div>
                 <div class="mode_button" id="lv9">
                     <h2>CPUと(LV9,depth=8+α)</h2>

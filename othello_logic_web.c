@@ -1649,6 +1649,185 @@ void minimax(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,
         return;
     }
 }
+void minimax_old(uint64_t board_w,uint64_t board_b,int depth,float alpha,float beta,int maximizing_player,int true_pass,int false_pass,RowCol *act,float *score){
+    /* call_count++;
+    printf("call #%d, depth=%d\n", call_count, depth);
+    printf("board_w: 0x%016llX\n", board_w);
+    printf("board_b: 0x%016llX\n", board_b); */
+    //fflush(stdout);
+    //printf("%d,%d\n",call_count,depth);
+    /* if (call_count > 600) {
+        
+        printf("Recursion limit exceeded\n");
+        return;
+    } */
+    //printf("=== minimax() 入った ===\n"); fflush(stdout);
+    //printf("\nBoard Wm: %llu\n", board_w);
+    //printf("order1\n");
+    //printf("Board Bm: %llu\n", board_b);
+    //printf("depth:%d\n",depth);
+    //printf("order2\n");
+    //printf("depth:%d",depth);
+    //RowCol *legal_list_w = malloc(sizeof(RowCol) * 64);
+    //RowCol *legal_list_b = malloc(sizeof(RowCol) * 64);
+    fflush(stdout);
+    RowCol legal_list_w[64];
+    int legal_list_size_w = 0;
+    get_legal_square("white",board_w,board_b,legal_list_w,&legal_list_size_w);
+    //printf("\norder1\n");
+    RowCol legal_list_b[64];
+    int legal_list_size_b = 0;
+    //printf("\norder2\n");
+    get_legal_square("black",board_w,board_b,legal_list_b,&legal_list_size_b);
+    //printf("\norder3");
+    RowCol result_act = *act;
+    float result_score = *score;
+    if (depth == 0 || is_terminal(board_w,board_b) || (legal_list_size_w==0 && legal_list_size_b==0)){
+        //printf("\n葉ノード");
+        //printf("\nt:%d",true_pass);
+        //printf("\nf:%d",false_pass);
+        *score = evaluate_board_old(board_w,board_b,true_pass,false_pass);
+        if (*score > 999999) *score = 999999;
+        if (*score < -999999) *score = -999999;
+        //printf("score_ha:%f\n",*score);
+        fflush(stdout);
+        //printf("\nscore:%f\n",*score);
+        //free(legal_list_w);
+        //free(legal_list_b);
+        return;
+    }
+    
+    if (maximizing_player){
+        RowCol* legal_list = legal_list_w;
+        int legal_size = legal_list_size_w;
+        if(legal_size==0){
+            minimax_old(board_w,board_b,depth,alpha,beta,FALSE,true_pass+1,false_pass,&*act,&*score);
+            return;
+        }
+        float max_eval = -INFINITY;
+        RowCol best_move;
+        
+        //RowCol move_oder_list[64];
+        int move_oder_list_size = legal_size;
+        MoveOrder move_order_list[64];
+        //MoveOrder *move_order_list = malloc(sizeof(MoveOrder) * move_oder_list_size);
+        for(int i=0;i<legal_size;i++){
+            RowCol move = legal_list[i];
+            RowCol flip_list[64];
+            int flip_list_size;
+            uint64_t new_board_w = board_w,new_board_b = board_b;
+            
+            fflush(stdout);
+            //printf("start_flip_TRUE\n");
+            identify_flip_stone("white",&new_board_w,&new_board_b,move,1,flip_list,&flip_list_size);
+            RowCol result_act2;
+            float result_score2;
+            /* printf(">>> call:%d",call_count);
+            printf(">>> Trying move (%d, %d) at depth=%d\n", move.row, move.col, depth);
+            printf(">>> New W: 0x%016llX\n", new_board_w);
+            printf(">>> New B: 0x%016llX\n", new_board_b); */
+            //minimax(new_board_w,new_board_b,0,alpha,beta,FALSE,true_pass,false_pass,&result_act2,&result_score2);
+            int white_score=0,black_score=0;
+            eval_bitboard_score(new_board_w,new_board_b,&white_score,&black_score);
+            float board_score = white_score - black_score*1.5f;
+            move_order_list[i] = (MoveOrder){board_score,move,new_board_w,new_board_b};
+        }
+        //qsort(move_order_list, move_oder_list_size, sizeof(MoveOrder), compare_move_order_desc);//maximizing_player＝=Falseでは昇順に
+        insertion_sort_desc(move_order_list, move_oder_list_size);
+        prioritize_killer_moves(move_order_list, move_oder_list_size, depth);
+        for(int i=0;i<legal_size;i++){
+            RowCol move = move_order_list[i].move;
+            uint64_t new_board_w = move_order_list[i].newBoardW;
+            uint64_t new_board_b = move_order_list[i].newBoardB;
+
+            float eval;
+            RowCol act2;
+            
+            minimax_old(new_board_w,new_board_b,depth-1,alpha,beta,FALSE,true_pass,false_pass,&act2,&eval);
+            //printf("return_eval_TRUE\n");
+            if (eval > max_eval){
+                max_eval = eval;
+                best_move = move;
+            }
+            alpha = nmax(alpha, eval);
+            if (beta <= alpha){
+                break;
+            }
+        }
+        //printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
+        *act = best_move;
+        *score = max_eval;
+        if (*score > 999999) *score = 999999;
+        if (*score < -999999) *score = -999999;
+        //printf("αβ_return_eval_TRUE\n");
+        //free(move_order_list);
+        //free(legal_list_w);
+        //free(legal_list_b);
+        return;
+    }else{
+        RowCol* legal_list = legal_list_b;
+        int legal_size = legal_list_size_b;
+        if(legal_size==0){
+            minimax_old(board_w,board_b,depth,alpha,beta,TRUE,true_pass,false_pass+1,&*act,&*score);
+            return;
+        }
+        float min_eval = INFINITY;
+        RowCol best_move;
+
+        int move_oder_list_size = legal_size;
+        MoveOrder move_order_list[64];
+        //MoveOrder *move_order_list = malloc(sizeof(MoveOrder) * move_oder_list_size);
+        for(int i=0;i<legal_size;i++){
+            RowCol move = legal_list[i];
+            RowCol flip_list[64];
+            int flip_list_size;
+            uint64_t new_board_w = board_w,new_board_b = board_b;
+            //rintf("start_flip_FALSE\n");
+            identify_flip_stone("black",&new_board_w,&new_board_b,move,1,flip_list,&flip_list_size);
+            RowCol result_act2;
+            float result_score2;
+            //minimax(new_board_w,new_board_b,0,alpha,beta,TRUE,true_pass,false_pass,&result_act2,&result_score2);
+            int white_score=0,black_score=0;
+            eval_bitboard_score(new_board_w,new_board_b,&white_score,&black_score);
+
+            float board_score = white_score - black_score*1.5f;
+            //printf("return_eval_FALSE\n");
+            move_order_list[i] = (MoveOrder){board_score,move,new_board_w,new_board_b};
+        }
+        //qsort(move_order_list, move_oder_list_size, sizeof(MoveOrder), compare_move_order_asc);
+        insertion_sort_asc(move_order_list, move_oder_list_size);
+        prioritize_killer_moves(move_order_list, move_oder_list_size, depth);
+        for(int i=0;i<legal_size;i++){
+            RowCol move = move_order_list[i].move;
+            uint64_t new_board_w = move_order_list[i].newBoardW;
+            uint64_t new_board_b = move_order_list[i].newBoardB;
+
+            float eval;
+            RowCol act2;
+            
+            minimax_old(new_board_w,new_board_b,depth-1,alpha,beta,TRUE,true_pass,false_pass,&act2,&eval);
+            //printf("\nact:(%d,%d),score:%f",move.row,move.col,eval);
+            if (eval < min_eval){
+                min_eval = eval;
+                best_move = move;
+            }
+            beta = nmin(beta, eval);
+            if (beta <= alpha){
+                break;
+            }
+        }
+        *act = best_move;
+        *score = min_eval;
+        if (*score > 999999) *score = 999999;
+        if (*score < -999999) *score = -999999;
+        //printf("αβ_return_eval_FALSE\n");
+        //free(move_order_list);
+        //free(legal_list_w);
+        //free(legal_list_b);
+        //printf(">>> return action: (%d,%d)\n", best_move.row, best_move.col);
+        return;
+    }
+}
 
 void minimax_split(uint32_t board_w_high, uint32_t board_w_low,
                    uint32_t board_b_high, uint32_t board_b_low,

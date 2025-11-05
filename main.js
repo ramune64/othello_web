@@ -200,6 +200,15 @@ async function runMinimax(board_w, board_b, lv, pl) {
         const black_num = countBits(current_black);
         const turn = (white_num + black_num)-4+1;
     if(pl==1){
+        if(lv==8.5){
+            if(turn>=46){
+                console.log("turn_final:",turn);
+                await minimax_old_c(BigInt(board_w),BigInt(board_b), Number(12), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }else{
+                console.log("turn_nomal:",turn);
+                await minimax_old_c(BigInt(board_w),BigInt(board_b), Number(8), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }
+        }
         if(lv==9){
             if(turn>=46){
                 console.log("turn_final:",turn);
@@ -212,6 +221,15 @@ async function runMinimax(board_w, board_b, lv, pl) {
             await minimax_c(BigInt(board_w),BigInt(board_b), Number(lv), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
         }
     }else{
+        if(lv==8.5){
+            if(turn>=46){
+                console.log("turn_final:",turn);
+                await minimax_old_c(BigInt(board_b),BigInt(board_w), Number(12), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }else{
+                console.log("turn_nomal:",turn);
+                await minimax_old_c(BigInt(board_b),BigInt(board_w), Number(8), Number(-9999999.0), Number(9999999.0),1, 0, 0, act_ptr, score_ptr);
+            }
+        }
         if(lv==9){
             if(turn>=46){
                 console.log("turn_final:",turn);
