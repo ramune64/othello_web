@@ -349,6 +349,33 @@ html, body {
         margin: 25px;
     }
 }
+
+#todays_record{
+    & p{
+        line-height: 14px;
+        font-size: 16pt;
+        
+    }
+}
+.num_win,.num_lose,.num_draw{
+            font-size: 25pt;
+}
+.num_win{
+    color: red;
+}
+.num_lose{
+    color: blue;
+}
+.oukan{
+    top: 0;
+    right: 0;
+    position: absolute;
+    width: 50px;
+}
+.not_cleard{
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
 @media screen and (max-width: 500px) {
     #logo{
         height: 50px;
@@ -403,6 +430,12 @@ html, body {
     }
     .flex{
         gap: 0;
+    }
+    .oukan{
+        top: 0;
+        right: 0;
+        position: absolute;
+        width: 30px;
     }
 }
 @media screen and (max-width: 1415px) {

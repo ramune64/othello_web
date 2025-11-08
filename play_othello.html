@@ -7,6 +7,15 @@
 
         <link rel="stylesheet" href="style.css" type="text/css">
         <link rel="stylesheet" href="style_index.css" type="text/css">
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <!-- analytics (オプション、必要なら) -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+        <!-- Realtime Database (必須) -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
         <!-- PyScript CSS -->
         <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
         <!-- <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script> -->
@@ -32,6 +41,7 @@
         [[fetch]]
         files = ["./othello_play.py"]
     </py-config>
+    
     <!-- Pythonが読み込まれるまでLoadingを表示 -->
     <style>
         #loading { outline: none; border: none; background: transparent }
@@ -57,7 +67,9 @@
 };
 </script>
     <script src="othello_logic.js"></script>
+    
     <script type="module">
+        
         const over_wrap = document.getElementById("over_wrap");
         const mode_button_parent = document.getElementById("mode_button_parent");
         const loading = document.getElementById('loading');
@@ -104,9 +116,10 @@
         <dialog id="loading">
             <h1>Loading...</h1>
         </dialog>
+        
         <py-script>
             import js
-            from js import start_up
+            #from js import start_up
             from pyscript import display
             import numpy as np
             import asyncio
@@ -134,8 +147,10 @@
             js.get_legal_square = get_legal_square
             js.identify_flip_stone = identify_flip_stone
             js.minimax = minimax
-            
-            start_up()
+            print("start_upを実行します。")
+            js.start_up()
+            #js.save_result(1,4,"aa")
+
         </py-script>
         <div id="head_nav">
             <div id="header">
@@ -192,6 +207,24 @@
                 <div id="ad_space3" class="ad_space1"></div>
             </div>
             <div id="overview" class="main_content">
+                <div id="todays_record">
+                    <h3>皆さんの今日の勝敗(レベル別)</h3>
+                    <p>皆さんの勝利数が「勝数」です。</p>
+                    <div >
+                    <p id="lv_0win_rate">vs LV0: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_1win_rate">vs LV1: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_2win_rate">vs LV2: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_3win_rate">vs LV3: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_4win_rate">vs LV4: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_5win_rate">vs LV5: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_6win_rate">vs LV6: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_7win_rate">vs LV7: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_8win_rate">vs LV8: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_85win_rate">vs LV8.5: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    <p id="lv_9win_rate">vs LV9: プレイヤー<span class="num_win"></span>勝<span class="num_lose"></span>敗<span class="num_draw"></span>分</p>
+                    </div>
+                    <p>毎日00:00にリセットされます。</p>
+                </div>
                 <p style="font-size: 12pt;">
                     <span id="intro">ブラウザ上でオセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-Coach_AI</u></b><br>
                     に搭載されているオセロ(リバーシ)アルゴリズムとWEB上で対戦ができるページです。<br>対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。</span><br>
@@ -283,36 +316,47 @@
             </div>
             <div class="flex">
                 <div class="mode_button" id="lv0">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV0,Random)</h2>
                 </div>
                 <div class="mode_button" id="lv1">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV1,depth=1)</h2>
                 </div>
                 <div class="mode_button" id="lv2">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV2,depth=2)</h2>
                 </div>
                 <div class="mode_button" id="lv3">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV3,depth=3)</h2>
                 </div>
                 <div class="mode_button" id="lv4">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV4,depth=4)</h2>
                 </div>
                 <div class="mode_button" id="lv5">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV5,depth=5)</h2>
                 </div>
                 <div class="mode_button" id="lv6">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV6,depth=6)</h2>
                 </div>
                 <div class="mode_button" id="lv7">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV7,depth=7)</h2>
                 </div>
                 <div class="mode_button" id="lv8">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV8,depth=8)</h2>
                 </div>
                 <div class="mode_button" id="lv8.5">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV8.5,depth=8+α,<br>old type)</h2>
                 </div>
                 <div class="mode_button" id="lv9">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV9,depth=8+α)</h2>
                 </div>
             </div>
@@ -350,7 +394,9 @@
             <p id="record"></p>
         </div>
         <!-- <button onclick="a()">aaaaaaa</button> -->
+    <!-- <script src="./firebaseConfig.js"></script> -->
     <script src="./main.js"></script>
     <script src="./article.js"></script>
+    
     </body>
 </html>

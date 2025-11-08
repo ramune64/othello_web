@@ -1,3 +1,329 @@
+console.log("main.js: スクリプトの実行を開始しました。");
+
+
+const firebaseConfigDev  = {
+    apiKey: "AIzaSyARbLoBNG0h1JDUZWgmTO5uQaFFaGjL4r0",
+    authDomain: "e-coach-ai-dev.firebaseapp.com",
+    databaseURL: "https://e-coach-ai-dev-default-rtdb.firebaseio.com",
+    projectId: "e-coach-ai-dev",
+    storageBucket: "e-coach-ai-dev.firebasestorage.app",
+    messagingSenderId: "594985646322",
+    appId: "1:594985646322:web:2986bf3d12b1693e85f86b"
+};
+const firebaseConfigProd  = {
+    apiKey: "AIzaSyCQY-RCNAOKjvp8ItF4SJOr3iCgNjZSrGM",
+    authDomain: "e-coach-ai.firebaseapp.com",
+    databaseURL: "https://e-coach-ai-default-rtdb.firebaseio.com",
+    projectId: "e-coach-ai",
+    storageBucket: "e-coach-ai.firebasestorage.app",
+    messagingSenderId: "250769341822",
+    appId: "1:250769341822:web:5d49eff013adeef941c72f",
+    measurementId: "G-VJJVMNV2HX"
+};
+
+let selectedFirebaseConfig;
+
+// 現在のホスト名に基づいて Firebase 設定を選択
+if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    console.log("Local development environment detected. Using DEV Firebase project.");
+    selectedFirebaseConfig = firebaseConfigDev;
+} else if (window.location.hostname === "e-coach-ai.com" || window.location.hostname === "e-coach-ai.firebaseapp.com") {
+    console.log("Production environment detected. Using PROD Firebase project.");
+    selectedFirebaseConfig = firebaseConfigProd;
+} else {
+    console.warn("Unknown environment. Defaulting to DEV Firebase project. Please check hostname:", window.location.hostname);
+  selectedFirebaseConfig = firebaseConfigDev; // またはエラーをスロー
+}
+
+
+// Initialize Firebase (compat バージョンは firebase グローバル変数を使用)
+// firebase-app-compat.js を読み込むと window.firebase が使えるようになる
+const app = firebase.initializeApp(selectedFirebaseConfig);
+const analytics = firebase.analytics(); // firebase-analytics-compat.js を読み込むと使える
+const database = firebase.database(); // firebase-database-compat.js を読み込むと使える
+const functions = firebase.functions(); // ここで firebase.functions() を呼び出してインスタンスを取得
+const firestoreClient = firebase.firestore();
+/**
+ * 日本時間 (JST) で今日の日付を 'YYYY-MM-DD' 形式で取得します。
+ * クライアントのローカルタイムゾーンに関わらず、常にJSTで処理します。
+ */
+function getJSTDateString(date = new Date()) {
+    // Intl.DateTimeFormat を使用して、指定したタイムゾーンで日付をフォーマットします。
+    // ほとんどのモダンブラウザは 'Asia/Tokyo' タイムゾーンをサポートしています。
+    const formatter = new Intl.DateTimeFormat('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Asia/Tokyo'
+    });
+    // formatToParts を使用して、日付の各部分を抽出して 'YYYY-MM-DD' 形式を構築します。
+    const parts = formatter.formatToParts(date);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * 日本時間 (JST) で指定された日数前の日付を 'YYYY-MM-DD' 形式で取得します。
+ * 日数計算もJST基準で行います。
+ */
+function getJSTPastDateString(daysAgo) {
+    // JSTの今日の日付文字列を取得し、それを元にDateオブジェクトを作成することで、
+    // クライアントのローカルタイムゾーンの影響を受けずにJSTでの日数計算を可能にします。
+    const jstTodayString = getJSTDateString(new Date());
+    const [year, month, day] = jstTodayString.split('-').map(Number);
+    // Date.UTC を使用して、JSTの日付をUTCとして設定します (例: 2023-11-20 00:00 UTC)
+    const jstDate = new Date(Date.UTC(year, month - 1, day));
+
+    // UTCの日付から指定日数分を減算します
+    jstDate.setUTCDate(jstDate.getUTCDate() - daysAgo);
+
+    // 減算後の日付を再びJSTとしてフォーマットします
+    const formatter = new Intl.DateTimeFormat('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Asia/Tokyo'
+    });
+    const parts = formatter.formatToParts(jstDate);
+    const pastYear = parts.find(p => p.type === 'year')?.value;
+    const pastMonth = parts.find(p => p.type === 'month')?.value;
+    const pastDay = parts.find(p => p.type === 'day')?.value;
+    return `${pastYear}-${pastMonth}-${pastDay}`;
+}
+/**
+ * 2日以上前のデータを削除します。
+ * recordCpuGameResult が実行される際にトリガーされます。
+ */
+
+async function cleanupOldDailyCpuStats() {
+    //const database = window.database;
+    const twoDaysAgoJST = getJSTPastDateString(2); // 日本時間で2日前の日付を取得 (例: 2023-11-18)
+    const dailyStatsRef = database.ref('daily_cpu_stats');
+
+    try {
+        const snapshot = await dailyStatsRef.once('value'); // daily_cpu_stats の全てのデータを一度取得
+        if (snapshot.exists()) {
+        const allDates = snapshot.val();
+        const dateKeys = Object.keys(allDates || {}); // 存在する全ての日付キー (例: ["2023-11-17", "2023-11-18", "2023-11-19", ...])
+
+        for (const dateKey of dateKeys) {
+            // 日付文字列の辞書順比較を利用して、古い日付を判定します。
+            // 例: "2023-11-17" < "2023-11-18" は true となり、古いデータと判断されます。
+            if (dateKey <= twoDaysAgoJST) {
+            console.log(`古いデータ (${dateKey}) を削除します...`);
+            await database.ref(`daily_cpu_stats/${dateKey}`).set(null); // nullを設定することでノードを削除
+            }
+        }
+        }
+    } catch (error) {
+        console.error("古いデータのクリーンアップ中にエラーが発生しました:", error);
+    }
+}
+
+let currentUserUid = null; // 現在の匿名ユーザーのUIDを保持する変数
+
+// アプリのロード時に匿名サインインを試みる関数
+async function signInAnonymouslyOnce() {
+    if (firebase.auth().currentUser) {
+        currentUserUid = firebase.auth().currentUser.uid;
+        console.log("匿名ユーザーとして既にサインイン済みです！UID:", currentUserUid);
+        return;
+    }
+    try {
+        const userCredential = await firebase.auth().signInAnonymously(); // firebase.auth() を使う
+        currentUserUid = userCredential.user.uid;
+        console.log("匿名ユーザーとしてサインインしました！UID:", currentUserUid);
+        // ★追加: Firestore に最終ログイン日時を記録
+        try {
+            const userRef = firestoreClient.collection('users').doc(currentUserUid);
+            console.log("got_UID:",currentUserUid);
+            await userRef.set({
+                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }); // merge: true で既存フィールドを上書きしない
+            console.log(`Firestore: ユーザー ${currentUserUid} の最終ログイン日時を更新しました。`);
+        } catch (firestoreError) {
+            console.error("Firestore: 最終ログイン日時更新中にエラーが発生しました:", firestoreError);
+        }
+    } catch (error) {
+        console.error("匿名サインイン中にエラーが発生しました:", error);
+        // エラーが発生したら、currentUserUid は null のまま
+    }
+    
+}
+
+const recordOthelloResultCallable = functions.httpsCallable('recordOthelloResult');
+
+async function save_result(cpuResult,lv,record){
+    // まず、匿名認証が完了していることを確認
+    console.log("save start");
+    if (!firebase.auth().currentUser) { // firebase.auth().currentUser で現在のユーザーを確認
+        console.warn("ユーザーがサインインしていません。匿名サインインを試みます。");
+        await signInAnonymouslyOnce(); // 匿名サインインが完了するまで待つ
+        if (!firebase.auth().currentUser) { // 再度確認。サインインに失敗した場合はここで終了
+            console.error("匿名サインインに失敗したため、ゲーム結果を送信できません。");
+            alert("ゲーム結果を記録できませんでした。もう一度お試しください。");
+            return;
+        }
+    }
+    console.log("save_result: Cloud Function を呼び出す直前。");
+    console.log("save_result: firebase.auth().currentUser:", firebase.auth().currentUser); // ここが null でないこと
+    if (firebase.auth().currentUser) {
+        console.log("save_result: currentUser.uid:", firebase.auth().currentUser.uid); // UID が表示されること
+        try {
+            const idTokenResult = await firebase.auth().currentUser.getIdTokenResult();
+            console.log("save_result: currentUser.getIdTokenResult().token:", idTokenResult.token); // IDトークンが表示されること
+            // ★重要: これが null や undefined ではないこと。そして、取得時にエラーが出ないこと。
+        } catch (tokenError) {
+            console.error("save_result: IDトークン取得エラー:", tokenError); // エラーが出ないこと
+        }
+    } else {
+        console.log("save_result: currentUser は null です。"); // ★このログが出ていたら問題
+    }
+    try {
+        console.log("通信開始");
+        // Callable Cloud Function を呼び出す
+        const result = await recordOthelloResultCallable({
+            cpuLevel: lv,
+            cpuResult: cpuResult,
+            record :record,
+        });
+        console.log("Cloud Functionからの応答:", result.data);
+
+        // 必要であれば、Cloud Functionの応答に基づいてUIを更新
+        if (result.data.status === 'success') {
+            console.log(`ゲーム結果が正常にサーバーに記録されました。CPUレベル${lv}`);
+            // ここで displayDailyCpuGameStats を呼び出して、UIを更新しても良いでしょう
+            // displayDailyCpuGameStats(lv); 
+        } else {
+            console.warn(`ゲーム結果の記録に問題が発生しました: ${result.data.message}`);
+        }
+
+    } catch (error) {
+    console.error("Cloud Functionの呼び出し中にエラーが発生しました:", error.message);
+    if (error.code === 'unauthenticated') {
+        console.error("認証が必要です。再度サインインを試みてください。");
+    } else if (error.code === 'invalid-argument') {
+        console.error("無効な引数がCloud Functionに渡されました。");
+    } else if (error.code === 'resource-exhausted') { // レートリミットのエラーハンドリング
+        alert("リクエストが多すぎます。1分後に再度ゲーム結果を送信できます。");
+        console.warn("レートリミットに達しました。");
+    } else {
+        console.error("その他の不明なエラー:", error.code);
+    }
+}
+}
+
+
+async function save_result2(cpu_result,lv){
+    await cleanupOldDailyCpuStats();
+    //const database = window.database;
+    const todayJST = getJSTDateString(); // 日本時間での今日の日付を取得
+    const statsRef = database.ref(`daily_cpu_stats/${todayJST}/cpu_level_${lv}`);
+    statsRef.transaction((currentData) => {
+        const data = currentData || { wins: 0, losses: 0, draws: 0 };
+        if (cpu_result === 1) data.wins++;
+        else if (cpu_result === -1) data.losses++;
+        else if (cpu_result === 0) data.draws++;
+        return data;
+    })
+    .then((result) => {
+        if (result.committed) {
+            console.log(`CPUレベル${lv}との今日の勝敗が正常に更新されました！`);
+        } else {
+            console.log(`CPUレベル${lv}との今日の勝敗更新はコミットされませんでした (トランザクションが中断された可能性)。`);
+        }
+    })
+    .catch((error) => {
+        console.error(`CPUレベル${lv}との勝敗更新中にエラーが発生しました:`, error);
+    });
+}
+
+async function getDailyCpuGameStats(cpuLevel) {
+    const todayJST = getJSTDateString();
+    const statsRef = database.ref(`daily_cpu_stats/${todayJST}/cpu_level_${cpuLevel}`);
+
+    try {
+        // once('value') は Promise を返すので await で結果を待てます
+        const snapshot = await statsRef.once('value');
+        const data = snapshot.val();
+
+        if (data) {
+            const wins = data.wins || 0;
+            const losses = data.losses || 0;
+            const draws = data.draws || 0;
+            console.log(`JST:${todayJST} CPUレベル${cpuLevel}: 勝利 ${wins} 回, 敗北 ${losses} 回, 引き分け ${draws} 回`);
+            return { wins, losses, draws };
+        } else {
+            console.log(`JST:${todayJST} CPUレベル${cpuLevel}: まだゲーム結果が記録されていません。`);
+            return { wins: 0, losses: 0, draws: 0 };
+        }
+    } catch (error) {
+        console.error(`CPUレベル${cpuLevel}の統計取得中にエラーが発生しました:`, error);
+        return { wins: 0, losses: 0, draws: 0 }; // エラー時もデフォルト値を返す
+    }
+}
+
+async function displayDailyCpuGameStats() {
+    console.log("日次CPUゲーム統計の表示を開始します...");
+    const allStats = {}; // 全CPUレベルの統計を格納するオブジェクト
+
+    for (let cpuLevel = 0; cpuLevel <= 9; cpuLevel++) {
+        // await を使って、各CPUレベルの統計取得が完了するのを待つ
+        const stats = await getDailyCpuGameStats(cpuLevel);
+        allStats[cpuLevel] = stats;
+        
+        // ここでUIを更新する処理を追加できます
+        // 例: document.getElementById(`cpu-stats-level-${cpuLevel}`).innerText = `勝利: ${stats.wins}, 敗北: ${stats.losses}`;
+        // console.log(`表示用: CPUレベル${cpuLevel} - 勝利: ${stats.wins}, 敗北: ${stats.losses}, 引き分け: ${stats.draws}`);
+    }
+    const stats = await getDailyCpuGameStats(85);
+    allStats[85] = stats;
+    console.log("すべてのCPUレベルの統計取得が完了しました:", allStats);
+    for (let cpuLevel = 0; cpuLevel <= 9; cpuLevel++) {
+        const id_name = `lv_${cpuLevel}win_rate`;
+        const lv_parent = document.getElementById(id_name);
+        lv_parent.querySelector(".num_win").textContent = allStats[cpuLevel].losses;
+        lv_parent.querySelector(".num_lose").textContent = allStats[cpuLevel].wins;
+        lv_parent.querySelector(".num_draw").textContent = allStats[cpuLevel].draws;
+    }
+    let cpuLevel = 85;
+    const id_name = `lv_${cpuLevel}win_rate`;
+    const lv_parent = document.getElementById(id_name);
+    lv_parent.querySelector(".num_win").textContent = allStats[cpuLevel].losses;
+    lv_parent.querySelector(".num_lose").textContent = allStats[cpuLevel].wins;
+    lv_parent.querySelector(".num_draw").textContent = allStats[cpuLevel].draws;
+    return allStats; // 必要に応じて集計結果を返す
+}
+displayDailyCpuGameStats();
+
+async function fetchUserBestWins() {
+    if (!currentUserUid) {
+        console.warn("ユーザーがサインインしていません。勝利記録を取得できません。");
+        // サインインを待つ、あるいはサインインさせる
+        await signInAnonymouslyOnce();
+        if (!currentUserUid) {
+            console.error("サインインに失敗したため、勝利記録を取得できません。");
+            return null;
+        }
+    }
+
+    try {
+        const doc = await firestoreClient.collection('user_best_wins').doc(currentUserUid).get();
+        if (doc.exists) {
+            console.log("ユーザーの勝利記録を取得しました:", doc.data());
+            return doc.data(); // ドキュメントのデータを返す
+        } else {
+            console.log("このユーザーの勝利記録はまだありません。");
+            return {}; // 空のオブジェクトを返す
+        }
+    } catch (error) {
+        console.error("ユーザーの勝利記録の取得中にエラーが発生しました:", error);
+        return null;
+    }
+}
+
 function bitLength(n) {
     if (n === 0) return 0;
     return n.toString(2).length;
@@ -49,7 +375,7 @@ function place_stone(white_places,black_places,last_placed,flips){
     if(flips){
         flips.forEach(element => {
             let flip_str = convert_act_bit2str(element);
-            document.getElementById(flip_str).style.backgroundColor="rgba(128,128,128,0.5)"
+            document.getElementById(flip_str).style.backgroundColor="rgba(128,128,128,0.7)"
         });
     }
 
@@ -100,15 +426,18 @@ function update_turn(white_board,black_board,last_placed,flips){
         const exist_legal2 = place_legal(second_check_color,white_board,black_board);
         if(!exist_legal2){
             console.log("finish");
+            let cpu_result;
             const white_num = countBits(current_white);
             const black_num = countBits(current_black);
             if(white_num>black_num){
                 if(pl_color==1){
                     result_txt.innerText = "勝利！！";
                     winner_txt.innerText = "あなたの勝利です。";
+                    cpu_result = -1;
                 }else if(pl_color==-1){
                     result_txt.innerText = "敗北...";
                     winner_txt.innerText = "CPUの勝利です。";
+                    cpu_result = 1;
                 }else{
                     result_txt.innerText = "終局";
                     winner_txt.innerText = "後手の勝利です。";
@@ -117,9 +446,11 @@ function update_turn(white_board,black_board,last_placed,flips){
                 if(pl_color==-1){
                     result_txt.innerText = "勝利！！";
                     winner_txt.innerText = "あなたの勝利です。";
+                    cpu_result = -1;
                 }else if(pl_color==1){
                     result_txt.innerText = "敗北...";
                     winner_txt.innerText = "CPUの勝利です。";
+                    cpu_result = 1;
                 }else{
                     result_txt.innerText = "終局";
                     winner_txt.innerText = "先手の勝利です。";
@@ -127,11 +458,17 @@ function update_turn(white_board,black_board,last_placed,flips){
             }else{
                 result_txt.innerText = "引き分け";
                 winner_txt.innerText = "引き分けです。";
+                cpu_result = 0;
             }
             record_txt.innerText = record;
             black_num_txt.innerText = black_num;
             white_num_txt.innerText = white_num;
             result_parent_ele.style.display = "block";
+            
+
+            if(pl_color!==0){
+                save_result(Number(cpu_result),Number(cpu_LV),record);
+            }
             
             //console.log(record);
             //勝敗結果を表示
@@ -366,6 +703,7 @@ function place_legal(coloe,white,black){
 }
 
 
+
 const col_letters = ["a","b","c","d","e","f","g","h"];
 const othello_board = document.getElementById("othello_board");
 let current_black,current_white;
@@ -374,6 +712,13 @@ function start_up(mode=0) {
     current_color = "black";
     record = "";
     if(mode==0){
+        if (!currentUserUid) {
+            signInAnonymouslyOnce().then(() => {
+                updateLevelSelectionUI(); // サインイン後にUIを更新
+            });
+        } else {
+            updateLevelSelectionUI(); // 既にサインイン済みならすぐにUIを更新
+        }
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col <8; col++) {
                 const id_name = col_letters[col] + (row+1);
@@ -418,6 +763,56 @@ function start_up(mode=0) {
     place_legal("black",current_white,current_black);
 
 }
+
+async function updateLevelSelectionUI() {
+    const bestWins = await fetchUserBestWins(); // ユーザーの勝利記録を取得
+
+    if (bestWins) {
+        for (let level = 0; level <= 9; level++) {
+            const levelWonField = `level_${level}_won_at`;
+            //const levelElement = document.getElementById(`cpu_level_${level}_selector`); // 例: レベル選択ボタンのID
+            
+            if (true) {
+                if (bestWins[levelWonField]) {
+                    // このレベルに勝ったことがある場合
+                    //levelElement.classList.add('level-won'); // 勝ったことを示すCSSクラスを追加
+                    console.log(`Lv.${level} に勝利済み (${bestWins[levelWonField].toDate().toLocaleString()})`); // ツールチップに日時表示
+                    document.getElementById(`lv${level}`).querySelector(".oukan").classList.remove("not_cleard");
+                    // 例: チェックマークアイコンを表示する要素を追加
+                    // const checkmark = document.createElement('span');
+                    // checkmark.textContent = ' ✅';
+                    // levelElement.appendChild(checkmark);
+                } else {
+                    // まだこのレベルに勝ったことがない場合
+                    console.log("まだ勝ってない");
+                    //levelElement.title = `Lv.${level} は未勝利`;
+                }
+            }
+        }
+        let level = 85;
+        const levelWonField = `level_${level}_won_at`;
+        if (true) {
+                if (bestWins[levelWonField]) {
+                    // このレベルに勝ったことがある場合
+                    //levelElement.classList.add('level-won'); // 勝ったことを示すCSSクラスを追加
+                    console.log(`Lv.${8.5} に勝利済み (${bestWins[levelWonField].toDate().toLocaleString()})`); // ツールチップに日時表示
+                    document.getElementById(`lv${8.5}`).querySelector(".oukan").classList.remove("not_cleard");
+                    // 例: チェックマークアイコンを表示する要素を追加
+                    // const checkmark = document.createElement('span');
+                    // checkmark.textContent = ' ✅';
+                    // levelElement.appendChild(checkmark);
+                } else {
+                    // まだこのレベルに勝ったことがない場合
+                    console.log("まだ勝ってない");
+                    //levelElement.title = `Lv.${level} は未勝利`;
+                }
+            }
+    }
+    // console.log("レベル選択UIの更新が完了しました。");
+}
+
+window.start_up = start_up;
+console.log("main.js: window.start_up を設定しました。現在の値:", typeof window.start_up);
 
 
 let current_color = "black";
@@ -591,17 +986,17 @@ document.getElementById("share-btn").addEventListener("click", () => {
     if(pl_color==1){
         winner = 
             black_num > white_num ? `黒(CPU Lv${cpu_LV})に敗北...` :
-            white_num > black_num ? `黒(CPU Lv${cpu_LV})に勝利!!` :
+            white_num > black_num ? `黒(CPU Lv${cpu_LV})に勝利！！` :
             `黒(CPU${cpu_LV})と引き分け！`;
     }else if(pl_color==-1){
         winner = 
-            black_num > white_num ? `白(CPU Lv${cpu_LV})に勝利!!` :
+            black_num > white_num ? `白(CPU Lv${cpu_LV})に勝利！！` :
             white_num > black_num ? `白(CPU Lv${cpu_LV})に敗北...` :
             `黒(CPU${cpu_LV})と引き分け！`;
     }else if(pl_color==0){
         winner = 
-            black_num > white_num ? `黒が勝利!!` :
-            white_num > black_num ? `白が勝利!!` :
+            black_num > white_num ? `黒が勝利！！` :
+            white_num > black_num ? `白が勝利！！` :
             `引き分け！`;
     }
     const text = `●オセロ対戦結果◯\n黒：${black_num}枚　白：${white_num}枚で\n${winner}\n@e_Coach_AI`;
@@ -611,3 +1006,13 @@ document.getElementById("share-btn").addEventListener("click", () => {
     `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&hashtags=${encodeURIComponent(hashtags)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank");
 })
+
+
+
+
+
+
+
+console.log("main.js: スクリプトの実行が完了しました。");
+
+
