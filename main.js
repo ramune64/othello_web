@@ -935,6 +935,7 @@ reset.addEventListener("click",()=>{
     reset.style.display = "none";
     level_txt.innerText = "";
     whitch_color.style.display = "none";
+    updateLevelSelectionUI();
     start_up(1);
 })
 
