@@ -936,6 +936,7 @@ reset.addEventListener("click",()=>{
     level_txt.innerText = "";
     whitch_color.style.display = "none";
     updateLevelSelectionUI();
+    displayDailyCpuGameStats();
     start_up(1);
 })
 
