@@ -350,7 +350,7 @@ exports.cleanUpOldData = onSchedule(
 
       // --- 1. まず、32日以上前の累積データを削除 ---
       const todayJST = getJSTDateString();
-      const oldThresholdDate = getJSTPastDateString(32); // 日本時間で32日前の日付を取得
+      const oldThresholdDate = getJSTPastDateString(93); // 日本時間で32日前の日付を取得
       const dailyStatsRootRef = db.ref("daily_cpu_stats");
       const usersCollectionRef = admin.firestore().collection("users");
       // Firestore users コレクション
@@ -499,7 +499,7 @@ exports.postDailyOthelloStatsToX = onSchedule(
         // const tweetText = "【テスト投稿】\nAPI使用ポストのテストです。";
 
         // const todayJST = getJSTDateString();
-        const yesterdayJST = getJSTPastDateString(0);
+        const yesterdayJST = getJSTPastDateString(1);
         // 前日の日付を取得 (例: "2023-10-26")
         const statsRef=admin.database().ref(`daily_cpu_stats/${yesterdayJST}`);
         const snapshot = await statsRef.once("value");
@@ -575,3 +575,83 @@ exports.postDailyOthelloStatsToX = onSchedule(
     },
 );
 
+exports.getHistoricalCpuStats = onCall(async (request) => {
+  // この関数は公開データ（集計結果）を返すため、request.auth (認証) は不要と仮定
+  // 必要であれば認証を追加することも可能です。
+  const {daysAgo = 30} = request.data || {}; // リクエストデータがなければデフォルト30日
+
+  if (typeof daysAgo !== "number" || daysAgo < 1 || daysAgo > 90) {
+    throw new HttpsError("invalid-argument", "daysAgo は1から90までの数値で指定してください。");
+  }
+  try {
+    const dailyStatsRootRef = admin.database().ref("daily_cpu_stats");
+
+    const todayJST = getJSTDateString();
+    const startDateJST=getJSTPastDateString(daysAgo); // 30日前の日付（この日以降のデータが必要）
+
+    // Realtime Database から過去30日間のデータを取得
+    // 日付キーでソートし、30日前の日付から今日までのデータを取得
+    const snapshot = await dailyStatsRootRef
+        .orderByKey()
+        .startAt(startDateJST)
+        .endAt(todayJST)
+        .once("value");
+
+    const allHistoricalStats = snapshot.val(); // 過去30日間の全データ
+    if (!allHistoricalStats) {
+      console.log("getHistoricalCpuStats: 過去30日間のデータは見つかりませんでした。");
+      return {}; // データがなければ空オブジェクトを返す
+    }
+
+    // --- ここでデータを集計・加工 ---
+    // 例: 各CPUレベルの総勝利数、総対戦数などを計算
+    const aggregatedStats = {};
+    const allLevels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 85, 9];
+    // 集計をより柔軟にするため、日ごとのデータも保持する形にする
+    const rawDataByLevelAndDate = {};
+    // { level: { date: { wins, losses, draws }, ... }, ... }
+    for (const level of allLevels) {
+      aggregatedStats[level] =
+        {totalWins: 0, totalLosses: 0, totalDraws: 0,
+          totalGames: 0, winRate: 0};
+      rawDataByLevelAndDate[level] = {};
+    }
+    for (const dateKey in allHistoricalStats) {
+      if (Object.prototype.hasOwnProperty.call(allHistoricalStats, dateKey)) {
+        const dailyData = allHistoricalStats[dateKey];
+
+        for (const level of allLevels) {
+          const levelKey = `cpu_level_${level}`;
+          const stats = dailyData[levelKey] || {wins: 0, losses: 0, draws: 0};
+
+          if (!aggregatedStats[level]) {
+            aggregatedStats[level] = {totalWins: 0, totalLosses: 0,
+              totalDraws: 0, totalGames: 0};
+          }
+          aggregatedStats[level].totalWins += stats.wins;
+          aggregatedStats[level].totalLosses += stats.losses;
+          aggregatedStats[level].totalDraws += stats.draws;
+          aggregatedStats[level].totalGames += (stats.wins +
+            stats.losses + stats.draws);
+
+          rawDataByLevelAndDate[level][dateKey] = stats;
+        }
+      }
+    }
+
+    for (const level in aggregatedStats) {
+      if (Object.prototype.hasOwnProperty.call(aggregatedStats, level)) {
+        const stats = aggregatedStats[level];
+        stats.winRate =
+        stats.totalGames > 0 ? (stats.totalWins / stats.totalGames) * 100 : 0;
+      }
+    }
+
+    console.log("getHistoricalCpuStats: 過去30日間の統計データを集計しました。");
+    // 集計済みデータと日ごとの生データを両方返す
+    return {aggregated: aggregatedStats, rawByDate: rawDataByLevelAndDate};
+  } catch (error) {
+    console.error("getHistoricalCpuStats: 統計データ取得中にエラーが発生しました:", error);
+    throw new HttpsError("internal", "過去の統計データ取得に失敗しました。", error);
+  }
+});

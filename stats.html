@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <link rel="stylesheet" href="style_index.css" type="text/css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <meta property="og:image" content="https://e-coach-ai.com/imgs/stat_thumb.png">
+    <meta property="og:description" content="オセロAI 戦績統計データをグラフで表示します。期間や表示項目を選んで調整も可能です。">
+    <meta property="og:title" content="オセロAI 戦績統計データをグラフで">
+    <meta property="og:image:width" content="960">
+    <meta property="og:image:height" content="510">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://e-coach-ai.com/stats.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@e_Coach_AI">
+
+    <title>オセロAI 戦績統計データ</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
+     crossorigin="anonymous"></script>
+     <link rel="apple-touch-icon" href="../imgs\favicon.ico">
+     <link rel="icon" href="../imgs\favicon.ico">
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+     <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-11Y9CHGM4E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-11Y9CHGM4E');
+</script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; /* マージンをリセット */
+            padding: 20px;
+            /* background-color: #f4f7f6; */ 
+            color: #333; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: auto;
+            margin-top: 20px;
+            background-color: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            text-align: center; 
+            color: #007bff; 
+            margin-bottom: 30px; 
+        }
+        .controls { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border-bottom: 1px solid #eee; 
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .control-group { 
+            display: inline-block; 
+            margin: 0 15px; 
+            vertical-align: middle;
+            font-size: 15pt;
+        }
+        #periodSelect {
+            font-size: 13pt;
+        }
+        .control-group label { 
+            font-weight: bold; 
+            margin-right: 10px; 
+        }
+        .control-group input[type="checkbox"] {
+            margin-top: 10px;
+            margin-right: 5px;
+
+            width: 18px;
+            height: 18px;
+        }
+        .chart-wrapper { 
+            /* display: flex; は chart-container の親から外し、スクロールの目的で別途ラッパー div を追加 */
+            margin-top: 20px; 
+            overflow-x: auto; /* この要素がスクロールコンテナになる */
+            -webkit-overflow-scrolling: touch; 
+            padding-bottom: 10px; /* スクロールバーがコンテンツと重ならないように */
+        }
+        /* ★追加：グラフ本体のラッパー */
+        .chart-inner-wrapper {
+            width: fit-content; /* 中身のコンテンツ幅に合わせる */
+            min-width: 100%;    /* 親のスクロールコンテナの幅より小さくならないように */
+        }
+
+        .chart-container { 
+            position: relative; 
+            /* ★幅は .chart-inner-wrapper が制御するので 100% は削除 */
+            /* width: 100%; */
+            min-width: 600px; /* PCでの表示最小幅。ここをコンテンツ量に合わせて調整 */
+            height: 500px; 
+            background-color: #fff; 
+            border-radius: 4px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            padding: 10px;
+            margin: auto; /* chart-inner-wrapper 内で中央寄せ */
+        }
+        .chart-container canvas { 
+            height: 100% !important; 
+            width: 100% !important; 
+        }
+        .loading { 
+            text-align: center; 
+            font-size: 1.2em; 
+            color: #666; 
+            margin-top: 50px; 
+        }
+        .error { 
+            text-align: center; 
+            font-size: 1.2em; 
+            color: #dc3545; 
+            margin-top: 50px; 
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .twitter-tweet{
+            margin: auto;
+        }
+        @media (max-width: 768px) { /* タブレット以下の画面幅 */
+            .container {
+                padding: 15px;
+            }
+            .controls {
+                padding: 10px;
+                flex-direction: column; /* コントロールを縦に並べる */
+            }
+            .control-group {
+                margin: 10px 0;
+                display: block; /* グループを縦に */
+                font-size: 10pt;
+            }
+            #periodSelect {
+                font-size: 10pt;
+            }
+            .chart-container {
+                /* スマホではさらに横幅を確保（項目数に応じて調整）*/
+                min-width: 800px; /* 例えば、スマホでこれくらいの幅を確保してスクロールさせる */
+                height: 400px; /* 縦も少し小さく */
+            }
+            .control-group label { 
+                font-weight: bold; 
+                margin-right: 5px; 
+            }
+            .control-group input[type="checkbox"] {
+                margin-top: 3px;
+                margin-right: 5px;
+
+                width: 13px;
+                height: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="head_nav">
+        <div id="header">
+            <a href="#"><img src="imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
+        </div>
+        <nav>
+            <a href="#">ホーム</a>
+            <a href="../list.html">記事一覧</a>
+            <a href="../play_othello.html">オセロゲーム</a>
+            <a href="#">戦績グラフ</a>
+        </nav>
+    </div>
+    <h1 class="main_title" id="theme">オセロAI 戦績統計データ</h1>
+    <h2 class="sub_title" id="intro">皆さんの戦績をグラフで表示</h2>
+    <div class="container">
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="periodSelect">期間:</label>
+                <select id="periodSelect">
+                    <option value="1">1 day</option>
+                    <option value="3">3 days</option>
+                    <option value="7">1 weeks</option>
+                    <option value="14">2 weeks</option>
+                    <option value="30" selected>1 month</option>
+                    <option value="60">2 months</option>
+                    <option value="90">3 months</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>表示項目:</label>
+                <input type="checkbox" id="showWinRate" value="winRate" checked><label for="showWinRate">勝率</label>
+                <input type="checkbox" id="showTotalWins" value="totalWins" checked><label for="showTotalWins">勝数</label>
+                <input type="checkbox" id="showTotalGames" value="totalGames" checked><label for="showTotalGames">対戦総数</label>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">データを読み込み中...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="chart-wrapper">
+            <!-- ★ここを修正 -->
+            <div class="chart-inner-wrapper">
+                <!-- 結合グラフのCanvasがここに動的に生成されます -->
+            </div>
+        </div>
+    </div>
+    <div class="main_content">
+        <h2 style="text-align: center;">X(旧Twitter)での取り組み</h2>
+        <p>
+            以下のXのアカウントでは毎朝7時(日本時間)に、前日のプレイヤーの皆さんの戦績をポストしています。<br>
+            是非フォローして、毎日の皆さんによる戦績を確認してみてください！<br>
+            他にも記事の紹介やアップデート情報の投稿も行っています！
+            <blockquote class="twitter-tweet"><p lang="ja" dir="ltr">「e-Coach_AI オセロ版」がついに販売開始されました！！<br><br>「e-Coach_AI オセロ版」はオセロの上達を目的としたアプリです。<br>パソコン上の盤面を読み取って最善手を表示したり、棋譜や対局動画を解析•評価することができます。<a href="https://twitter.com/hashtag/%E3%82%AA%E3%82%BB%E3%83%AD?src=hash&amp;ref_src=twsrc%5Etfw">#オセロ</a> <a href="https://twitter.com/hashtag/BOOTH?src=hash&amp;ref_src=twsrc%5Etfw">#BOOTH</a> <a href="https://twitter.com/hashtag/%E3%82%A2%E3%83%97%E3%83%AA?src=hash&amp;ref_src=twsrc%5Etfw">#アプリ</a></p>&mdash; e-Coach_AI-オセロ (@e_Coach_AI) <a href="https://twitter.com/e_Coach_AI/status/1948681439589138923?ref_src=twsrc%5Etfw">July 25, 2025</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+        </p>
+    </div>
+    
+
+
+
+
+
+
+
+    <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="305a1205361b0f40d49aae13519ccbea" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "305a1205361b0f40d49aae13519ccbea",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+    <div class="ads">
+            <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
+            <div id= 'div_fam8_async_116272_3'>
+            <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116272&_mstype=3');</script>
+            </div>
+            <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
+            <div id= 'div_fam8_async_116248'>
+            <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_mloc=116248');</script>
+            </div>
+            <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
+            <div id= 'div_fam8_async_116273_3'>
+            <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116273&_mstype=3');</script>
+            </div>
+            <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
+            <div id= 'div_fam8_async_116274_3'>
+            <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116274&_mstype=3');</script>
+            </div>
+        </div>
+    <div id="fotter">
+                <a id="x" href="https://x.com/e_Coach_AI" target="_blank">
+                    <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
+                </a>
+                <p>&copy; 2025 ЯAMUNE</p>
+            </div>
+    <div class="side_ads">
+        <!-- admax -->
+        <script type="text/javascript">(admaxads = window.admaxads || []).push({admax_id: "ebcfc33ec533e5210574b0c513d0d083",type: "action"});</script>
+        <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+        <!-- admax -->
+    </div>
+    <div class="ads">
+        <!-- admax -->
+        <script type="text/javascript">(admaxads = window.admaxads || []).push({admax_id: "e79758d91e11753f17e7bbefdf7cf0ce",type: "overlay"});</script>
+        <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+        <!-- admax -->
+    </div>
+    <script src="./stats.js"></script>
+    <script src="./article.js"></script>
+</body>
+</html>
