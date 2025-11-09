@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../style.css" type="text/css">
     <link rel="stylesheet" href="../style_index.css" type="text/css">
-    <meta property="og:image" content="https://e-coach-ai.com/articles/new_functions_imgs/thumb_new_func.png">
-    <meta property="og:description" content="オセロでCPUと対戦できる機能にアップデートを加えました。">
-    <meta property="og:title" content="オセロゲーム機能アップデートのお知らせ">
+    <meta property="og:image" content="https://e-coach-ai.com/articles/new_functions2_imgs/thumb_new_func2.png">
+    <meta property="og:description" content="サービスににアップデートを加えました。">
+    <meta property="og:title" content="サービスアップデートのお知らせ">
     <meta property="og:image:width" content="960">
     <meta property="og:image:height" content="510">
     <meta property="og:type" content="article">
-    <meta property="og:url" content="https://e-coach-ai.com/articles/new_functions.html">
+    <meta property="og:url" content="https://e-coach-ai.com/articles/new_functions2.html">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@e_Coach_AI">
-    <title>オセロゲーム機能アップデートのお知らせ</title>
+    <title>サービスの機能アップデートのお知らせ/データベースを用いた新機能の実装</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
      crossorigin="anonymous"></script>
      <link rel="apple-touch-icon" href="../imgs\favicon.ico">
@@ -43,14 +43,14 @@
         </nav>
     </div>
     <div  class="main_title">
-        <h1>オセロゲーム機能アップデート</h1>
+        <h1>サービス機能アップデート</h1>
     </div>
     <div class="main_content">
-        <h2 id="theme">オセロ対戦機能がちょっと使いやすくなりました</h2>
-        <p id="intro">タイトルにもあるとおり、本サイトにて提供しているオセロゲーム機能にアップデートを行いました。<br>
-            今回はその内容を紹介したいと思います。
+        <h2 id="theme">サイトがもっと魅力的になりました</h2>
+        <p id="intro">今回はサイトなどににいくつかのアップデートを行いました。<br>
+            今回はその内容の紹介と、それを実現した技術の話も簡単にしたいと思います。
         </p>
-        <img src="../articles/new_functions_imgs/thumb_new_func.png" id="thumb_nail" alt="このページのサムネイル。">
+        <img src="../articles/new_functions2_imgs/thumb_new_func2.png" id="thumb_nail" alt="このページのサムネイル。">
         <div class="ads">
             <!-- admax -->
             <div class="admax-switch" data-admax-id="39fee66d53fcb638473cc0c0ffce024f" style="display:inline-block;"></div>
@@ -69,15 +69,6 @@
             <!-- admax -->
         </div>
         <div class="ads">
-            
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="39fee66d53fcb638473cc0c0ffce024f" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "39fee66d53fcb638473cc0c0ffce024f",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
-        <div class="ads">
             <!-- admax -->
             <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
             <script type="text/javascript">
@@ -85,98 +76,107 @@
             <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
             <!-- admax -->
         </div>
-        <h3 id="1">直前に石を置いたマス、ひっくり返ったマスがわかるように</h3>
+        <h3 id="1">その日の勝敗情報を表示するように。</h3>
+        
+            <img src="../articles/new_functions2_imgs/image1.png" alt="新機能を示すスクリーンショット。" style="width: 25%;">
+        
         <p>
-            <img src="../articles/new_functions_imgs/image1.png" alt="新機能を示すスクリーンショット。直前に石を置いたマスの背景が濃い灰色に、ひっくり返された石のマスの背景が薄い灰色になっている。">
+            こちらは以下のオセロ対戦サイトに関するアップデートです。
         </p>
-        <h4>石を置いたマスの背景は濃い灰色に</h4>
-        <p>
-            上に示した画像のように、直前に石を置いたマスの背景が濃い灰色になるようになりました。<br>
-            これにより、対局の流れを把握しやすくなります。
-        </p>
-        <h4>ひっくり返されたマスの背景は薄い灰色に</h4>
-        <p>
-            同じく示された画像のように、直前にひっくり返されたマスの背景は薄い灰色になるようになりました。
-            こちらの機能と上記の機能により、CPUによりすぐに盤面を更新されたとしても状況の把握がしやすくなります。
-        </p>
-        <div class="ads">
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
-        <h3 id="2">計算が超高速化！</h3>
-        <p>
-            今まで、レベル5などになるとCPUが1手打つのに1分以上かかってしまっている場合がありましたが、この問題を解決いたしました。<br>
-            これにより、快適に対戦をお楽しみいただけます。
-        </p>
-        <h4>それに伴う新レベル解放</h4>
-        <p>
-            今まではCPUのレベルとして0~5までを提供しておりました。しかし、今回の高速化に伴い新たなCPUのレベルを提供できるようになりました。<br>
-            このサイトのオセロゲームにおける「レベル」とは、基本的にαβ法の先読みの手数のことを指しています。この数が増えるほど計算量が増加するため、さらなるレベルの解放には計算の高速化が必要でした。<br>
-            しかしついにそれが実現したため、新たなレベル<b>6~9</b>を解放いたします。<br>
-            さらなるオセロ上達に向けてぜひ挑戦してみてください！！<br>
-            ※Lv9は通常は8手読みですが、終盤はさらに深くまで先読みします。
-            <img src="../articles/new_functions_imgs/image2.png" alt="新たなレベルが追加されたレベル選択画面">
-        </p>
-        <div class="ads">
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
-        <h3 id="3">評価関数の高性能化</h3>
-        <p>
-            そしてさらに、シンプルに評価関数を強化いたしました。<br>
-            これにより、今までと同じレベルでも若干前より強くなっている可能性がございます。<br>
-            新たなレベルにもぜひ挑戦しましょう！<br>
-            具体的な強化点に関しては私の受験が終わったら記事にしたいと思います。
-        </p>
-        <div class="ads">
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
-        <h3 id="4">X(旧Twitter)での共有機能が追加！</h3>
-        <p>
-            対局の結果をX(旧Twitter)で共有できるようになりました。<br>
-            自分の成長の過程をSNSに残しましょう！
-        </p>
-        <div class="ads">
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
-        <h3 id="5">さいごに</h3>
-        <p>
-            いかがでしたでしょうか？
-            これらの新機能により、より快適なオセロ体験が可能になること間違いなしです！<br>
-            さらなる上達に向けて我々が販売している「e-Coach_AI」もぜひご活用ください！！<br>
-            e-Coach_AIの紹介は↓こちら↓
-        </p>
-        <a href="../index.html" target="_blank" class="same_domain">
-            <div>
-                <img src="" alt="リンク先のページのサムネイル画像">
-                <section><h5></h5><p></p></section>
-            </div>
-        </a>
-        <p>また、アップデートを行ったオセロの対戦ページは↓こちら↓</p>
         <a href="../play_othello.html" target="_blank" class="same_domain">
             <div>
                 <img src="" alt="リンク先のページのサムネイル画像">
                 <section><h5></h5><p></p></section>
             </div>
         </a>
+        <p>
+            オセロの盤面の下方に、その日のレベル別の戦績を表示できるようになりました。<br>
+            他の人はどんなレベルに挑戦していて、どのような成績をおさめているのかを知ることができるようになります。<br>
+            自分の立ち位置を把握して、さらなる実力アップのモチベーションをあげていきましょう！
+        </p>
+        <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+        <h3 id="2">長期間の戦績はグラフで閲覧が可能に</h3>
+        <img src="../articles/new_functions2_imgs/image2.png" alt="新機能を示すスクリーンショット。">
+        <p>
+            先ほど紹介したその日の戦績を確認する機能に加え、1日～3ヶ月の期間のCPUレベル別の皆さんの戦績を確認できるようになりました。<br>
+            具体的には「期間」と「表示項目」を選択していただくとその内容が棒グラフとして下部に表示されるというものです。<br>
+            「期間」については、1日、3日、1週間、2週間、1ヶ月、2ヶ月、3ヶ月からの選択が可能で、<br>
+            「表示項目」については勝率、勝敗、対戦総数の表示の可否を選択していただけます。<br>
+            それぞれの選択項目は選んだそばから反映されるお手軽仕様です！<br>
+            ぜひ、こちらの機能も活用して他のユーザーの対戦成績を確認してみましょう！！<br>
+            これらを体験できるページはこちら↓
+        </p>
+        <a href="/stats.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
+        <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+        <h3 id="3">勝利したことがあるレベルが一目でわかるように</h3>
+        <img src="../articles/new_functions2_imgs/image3.png" alt="新機能を示すスクリーンショット。">
+        <p>
+            さらに、オセロ対戦サイトにおいて、今までに勝利したことがあるレベルの選択ボタンの右上に王冠が表示されるようになりました。<br>
+            これにより、自分が成長してきた記録を残すことが可能となり、実力アップのモチベーションが上がること間違いなしです！
+        </p>
+        <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+        <h3 id="4">X(旧Twitter)での前日の皆さんの戦績をツイート</h3>
+        <p>
+            e-Coach_AIのXにて、このように↓毎朝7時に前日の皆さんの戦績をポストするようになりました。<br>
+            <blockquote class="twitter-tweet" data-media-max-width="560"><p lang="ja" dir="ltr">おはようございます！<br>昨日のAIと皆さんの対戦成績です！(Lv.0~Lv.3)<br>2025/11/08<br><br>vs Lv.0: プレイヤー1勝0敗0分<br>vs Lv.1: プレイヤー0勝0敗0分<br>vs Lv.2: プレイヤー0勝0敗0分<br>vs Lv.3: プレイヤー0勝0敗0分<a href="https://twitter.com/hashtag/%E3%82%AA%E3%82%BB%E3%83%AD?src=hash&amp;ref_src=twsrc%5Etfw">#オセロ</a> <a href="https://t.co/sIddSUw71T">https://t.co/sIddSUw71T</a></p>&mdash; e-Coach_AI-オセロ (@e_Coach_AI) <a href="https://twitter.com/e_Coach_AI/status/1987278972892094635?ref_src=twsrc%5Etfw">November 8, 2025</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+            このアカウントでは他にもアップデート情報の配信など、様々な活動を行っていますので、是非フォローお願いします！
+        </p>
+        <div class="ads">
+            <!-- admax -->
+            <div class="admax-switch" data-admax-id="ae35c59c83eecd1d09d5c295f9f60a87" style="display:inline-block;"></div>
+            <script type="text/javascript">
+            (admaxads = window.admaxads || []).push({admax_id: "ae35c59c83eecd1d09d5c295f9f60a87",type: "switch"});</script>
+            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
+            <!-- admax -->
+        </div>
+        <h3 id="5">なぜこのような機能を実装することができたのか</h3>
+        <p>
+            さて、せっかくなので軽めに技術的な話もしておきましょう。<br>
+            今まではなかったこれらの機能をなぜ急にいくつも実装することができたのでしょうか？<br>
+            それは、データベースを使うようになったからです。<br>
+            データベースとは、構造化されたデータをルールにしたがって整理、保存し、管理できるというものです。<br>
+            めっちゃくちゃ砕いて言うと、インターネット上にあるエクセルファイルみたいな感じですかね？<br>
+            エクセルでは例えばVLOOKUPなどで条件に当てはまるデータを抽出して来たりしますが、データベースも同じで、そんな調子でデータの検索や抽出がしやすいのです。<br>
+            今回は、データベースに日ごとのレベル別の戦績を記録し、皆さんがサイトにアクセスしたときに皆さんのデバイス(ブラウザ)がそのデータベースに保存されているデータを取得して画面に表示しているのです。<br>
+            また、皆さんとCPUの対局が終わった時には、そのレベルと結果をデータベースに送信して値を更新しているのです。<br>
+            加えて、皆さんのデバイスのIDとレベル別の初勝利時期もデータベースに記録することで、そのレベルに勝利したことがあるかどうかを判別していたのです。<br>
+            そしてこれは裏話なのですが、ユーザーの皆さんがレベル8以上のCPUに勝利した場合はその棋譜もデータベースに保存されます。これは私の研究資料のためです。是非私の更なるAI強化のためにも高いレベルに挑戦できるように頑張ってください！<br>
+            また、Xでの自動ポストについては、毎日朝7時にサーバーで自動的にプログラムを実行し、そのプログラムの処理の内部でデータベースにアクセスし、前日の戦績を取得し、ポスト文を作成、そしてポストしているのです。
+        </p>
+        <h3 id="6">
+            さいごに
+        </h3>
+        <p>
+            いかがでしたでしょうか？<br>
+            今回のアップデートにより、よりユーザーの皆さんがオセロの実力アップにつながりやすい環境を作ることが出来たと考えています。<br>
+            我々が提供する「e-Coach_AI」を今後ともよろしくお願いします。
+        </p>
         <div class="ads">
             <!-- admax -->
             <div class="admax-switch" data-admax-id="305a1205361b0f40d49aae13519ccbea" style="display:inline-block;"></div>
@@ -186,14 +186,9 @@
             <!-- admax -->
         </div>
         <p><br><br>次の記事↓</p>
-        <a href="../articles/new_functions2.html" target="_blank" class="same_domain">
-            <div>
-                <img src="" alt="リンク先のページのサムネイル画像">
-                <section><h5></h5><p></p></section>
-            </div>
-        </a>
+        <h1 id="latest">この記事は最新です</h1>
         <p>前回の記事↓</p>
-        <a href="../articles/procon1.html" target="_blank" class="same_domain">
+        <a href="../articles/new_functions.html" target="_blank" class="same_domain">
             <div>
                 <img src="" alt="リンク先のページのサムネイル画像">
                 <section><h5></h5><p></p></section>

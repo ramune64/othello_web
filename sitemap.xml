@@ -52,5 +52,14 @@
   <priority>0.5</priority>
   <lastmod>2025-11-05T20:45:03+09:00</lastmod>
 </url>
-
+<url>
+  <loc>https://e-coach-ai.com/stats.html</loc>
+  <priority>0.5</priority>
+  <lastmod>2025-11-09T21:20:03+09:00</lastmod>
+</url>
+<url>
+  <loc>https://e-coach-ai.com/articles/new_functions2.html</loc>
+  <priority>0.5</priority>
+  <lastmod>2025-11-05T22:42:30+09:00</lastmod>
+</url>
 </urlset>
