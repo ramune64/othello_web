@@ -628,8 +628,8 @@ exports.getHistoricalCpuStats = onCall(async (request) => {
             aggregatedStats[level] = {totalWins: 0, totalLosses: 0,
               totalDraws: 0, totalGames: 0};
           }
-          aggregatedStats[level].totalWins += stats.wins;
-          aggregatedStats[level].totalLosses += stats.losses;
+          aggregatedStats[level].totalWins += stats.losses;
+          aggregatedStats[level].totalLosses += stats.wins;
           aggregatedStats[level].totalDraws += stats.draws;
           aggregatedStats[level].totalGames += (stats.wins +
             stats.losses + stats.draws);
