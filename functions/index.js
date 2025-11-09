@@ -546,9 +546,9 @@ exports.postDailyOthelloStatsToX = onSchedule(
               `${levelStats.wins}敗${levelStats.draws}分\n`;
             }
           }
-          tweetTextp1+="#オセロ \nhttps://e-coach-ai.com/play_othello.html";
-          tweetTextp2+="#オセロ \nhttps://e-coach-ai.com/play_othello.html";
-          tweetTextp3+="#オセロ \nhttps://e-coach-ai.com/play_othello.html";
+          tweetTextp1+="#オセロ #AI \nhttps://e-coach-ai.com/play_othello.html";
+          tweetTextp2+="#オセロ #AI \nhttps://e-coach-ai.com/play_othello.html";
+          tweetTextp3+="#オセロ #AI \nhttps://e-coach-ai.com/play_othello.html";
           tweetParts.push(tweetTextp1);
           tweetParts.push(tweetTextp2);
           tweetParts.push(tweetTextp3);
