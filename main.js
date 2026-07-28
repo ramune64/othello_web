@@ -123,7 +123,7 @@ async function cleanupOldDailyCpuStats() {
 }
 const auth = firebase.auth();
 let currentUserUid = null; // 現在の匿名ユーザーのUIDを保持する変数
-auth.onAuthStateChanged(async (user) => {
+/* auth.onAuthStateChanged(async (user) => {
     // ユーザーの状態が変わるたびにここが発火する
     if (user) {
         // ユーザーが何らかの方法でログイン済みの場合 (Googleログイン、または匿名ログイン済み)
@@ -177,7 +177,7 @@ auth.onAuthStateChanged(async (user) => {
             console.error("onAuthStateChanged: 匿名サインイン中にエラーが発生しました:", error);
         }
     }
-});
+}); */
 // アプリのロード時に匿名サインインを試みる関数
 async function signInAnonymouslyOnce() {
     if (firebase.auth().currentUser) {
