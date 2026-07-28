@@ -81,14 +81,23 @@
             console.log("python_OK");
             checkReady();
         });
-        function checkReady() {
+        /* function checkReady() {
         if (wasm_ready && py_ready) {
             loading.close();
             over_wrap.style.display="block";
             mode_button_parent.style.display="block";
             console.log("✅ WASM & Python ready");
         }
-}
+        
+} */
+        window.checkReady = function () {
+    if (wasm_ready && py_ready) {
+        loading.close();
+        over_wrap.style.display = "block";
+        mode_button_parent.style.display = "block";
+        console.log("✅ WASM & Python ready");
+    }
+};
         loading.showModal();
         
     </script>

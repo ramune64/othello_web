@@ -206,7 +206,7 @@ async function signInAnonymouslyOnce() {
     }
     
 }
-const userInfoDiv = document.getElementById('user-info');
+/* const userInfoDiv = document.getElementById('user-info');
 function updateUserProfileUI(user) {
     // ... 以前提案した updateUserProfileUI の実装 ...
     
@@ -270,8 +270,8 @@ userInfoDiv.addEventListener("click",e=>{
         }
         user_interface_view = !user_interface_view;
     }
-})
-const del_button = document.getElementById("del_button");
+}) */
+/* const del_button = document.getElementById("del_button");
 del_button.addEventListener("click",e=>{
     if(allowDelInfo){
         if(user_interface_view){
@@ -282,9 +282,9 @@ del_button.addEventListener("click",e=>{
         }
         user_interface_view = !user_interface_view;
     }
-})
+}) */
 
-const logout_button = document.getElementById("logout_button");
+/* const logout_button = document.getElementById("logout_button");
 logout_button.addEventListener("click", async ()=>{
     try {
             // まず現在のユーザーをログアウトさせる
@@ -310,7 +310,7 @@ logout_button.addEventListener("click", async ()=>{
             // エラーが発生した場合は、ログインページにリダイレクトするなど、ユーザーに分かりやすい状態にする
             window.location.href = '/login.html'; 
         }
-})
+}) */
 
 const recordOthelloResultCallable = functions.httpsCallable('recordOthelloResult');
 
