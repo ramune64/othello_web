@@ -2,6 +2,95 @@ h1{
     text-align: center;
     font-size: 29pt;
 }
+
+.no-wrap {
+    white-space: nowrap;
+}
+#user-info{
+    display: none;
+    margin-left: auto;
+}
+#user-photo{
+    width: 30px;
+    margin-right: 10px;
+    border-radius: 100%;
+}
+#user_photo_interface{
+    width: 20%;
+    border-radius: 100%;
+}
+#current_user_info{
+    margin: 40px 0;
+}
+#userName_interface{
+    font-size: 23pt;
+}
+#change_user_info{
+    & div{
+        margin: 5px;
+        font-size: 14pt;
+        cursor: pointer;
+        border: gray 2px solid;
+        padding: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        background-color: rgba(107, 139, 173, 0.177);
+        border-radius: 10px;
+        transition: 0.2s;
+    }
+    & div:hover{
+        background-color: rgba(107, 139, 173, 0.5);
+        transition: 0.2s;
+    }
+}
+#user_interface_container{
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    background-color: #ebf1ff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 40%;
+    top: 50vh;
+    left: 50vw;
+    transform: translateY(-50%) translateX(-50%);
+}
+#del_button{
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    height: fit-content;
+    width: fit-content;
+    & #bar1,#bar2{
+        position: absolute;
+        display: block;
+        width: 30px;
+        height: 9px;
+        border-radius: 3px;
+        background-color: rgba(255, 103, 43, 0.883);
+        rotate: 45deg;
+        transform-origin: center;
+    }
+    & #bar2{
+        rotate: -45deg;
+    }
+}
+#del_button:hover{
+    cursor: pointer;
+}
+#cancel,#save{
+    display: none;
+}
+#inputDisplayName{
+    font-size: 16pt;
+    margin: 10px;
+    display: none;
+}
+#profileUpdateStatus{
+    margin: 10px;
+    font-size: 18pt;
+}
 nav{
     width: fit-content;
     margin-left: auto;
@@ -17,11 +106,21 @@ nav{
         transition: 0.5s;
         background-color: white;
         height: fit-content;
-        padding: 5px;
+        padding: 10px;
+        display: flex;
+        width: fit-content;
+        
     }
-    & a:hover{
+    & a#login_button{
+        margin-left: auto;
+        color: black;
+        background-color: rgb(225, 238, 255);
+        transition: 0.5s;
+        border-radius: 10px;
+    } 
+    & a:hover,a#login_button:hover{
         transform-origin: center center;
-        transform: rotateY(360deg);
+        /* transform: rotateY(360deg); */
         transition: 0.5s;
         color: white;
         background-color: black;
@@ -138,9 +237,17 @@ img#x_logo{
     h1{
         font-size: 16pt;
     }
+    #user-photo{
+        width: 20px;
+        margin-right: 5px;
+        border-radius: 100%;
+    }
     #head_nav{
         display: block;
         
+    }
+    nav{
+        flex-wrap: wrap;
     }
     nav a{
         font-size: 10pt;

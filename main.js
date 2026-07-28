@@ -121,9 +121,63 @@ async function cleanupOldDailyCpuStats() {
         console.error("古いデータのクリーンアップ中にエラーが発生しました:", error);
     }
 }
-
+const auth = firebase.auth();
 let currentUserUid = null; // 現在の匿名ユーザーのUIDを保持する変数
+auth.onAuthStateChanged(async (user) => {
+    // ユーザーの状態が変わるたびにここが発火する
+    if (user) {
+        // ユーザーが何らかの方法でログイン済みの場合 (Googleログイン、または匿名ログイン済み)
+        currentUserUid = user.uid;
+        console.log("onAuthStateChanged: ユーザーログイン済み。UID:", currentUserUid, "isAnonymous:", user.isAnonymous);
 
+        // Firestore に最終ログイン日時を記録 (Googleログイン/匿名ログイン問わず)
+        try {
+            const userRef = firestoreClient.collection('users').doc(currentUserUid);
+            await userRef.set({
+                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            console.log(`Firestore: ユーザー ${currentUserUid} の最終ログイン日時を更新しました。`);
+        } catch (firestoreError) {
+            console.error("Firestore: 最終ログイン日時更新中にエラーが発生しました:", firestoreError);
+        }
+
+        // ★★★ ユーザー情報のUI表示を更新する
+        updateUserProfileUI(user); 
+
+        // ここでゲームの初期化などを行う
+        //initializeGameWithUser(currentUserUid); 
+
+    } else {
+        // ユーザーが完全にログアウト状態の場合
+        currentUserUid = null;
+        console.log("onAuthStateChanged: ユーザーはログアウト状態です。自動匿名サインインを試みます。");
+
+        // ★★★ ログアウト状態の場合のみ、匿名サインインを実行 ★★★
+        try {
+            const userCredential = await auth.signInAnonymously();
+            currentUserUid = userCredential.user.uid;
+            console.log("onAuthStateChanged: 匿名ユーザーとしてサインイン成功！UID:", currentUserUid);
+
+            // 匿名サインイン後も、Firestore の最終ログイン日時を記録
+            try {
+                const userRef = firestoreClient.collection('users').doc(currentUserUid);
+                await userRef.set({
+                    lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log(`Firestore: 匿名ユーザー ${currentUserUid} の最終ログイン日時を更新しました。`);
+            } catch (firestoreError) {
+                console.error("Firestore: 匿名ユーザーの最終ログイン日時更新中にエラーが発生しました:", firestoreError);
+            }
+
+            // 匿名ユーザーとしてログイン後、UIを更新
+            //updateUserProfileUI(userCredential.user);
+            //initializeGameWithUser(currentUserUid); // ゲーム初期化
+            updateLevelSelectionUI();
+        } catch (error) {
+            console.error("onAuthStateChanged: 匿名サインイン中にエラーが発生しました:", error);
+        }
+    }
+});
 // アプリのロード時に匿名サインインを試みる関数
 async function signInAnonymouslyOnce() {
     if (firebase.auth().currentUser) {
@@ -152,6 +206,111 @@ async function signInAnonymouslyOnce() {
     }
     
 }
+const userInfoDiv = document.getElementById('user-info');
+function updateUserProfileUI(user) {
+    // ... 以前提案した updateUserProfileUI の実装 ...
+    
+    const userPhotoImg = document.getElementById('user-photo');
+    const userDisplayNameSpan = document.getElementById('user-display-name');
+    //const signoutButton = document.getElementById('signout-button'); // ログアウトボタン
+    const authButtonsDiv = document.getElementById('login_button'); // ログイン/登録ボタンのコンテナ
+
+    const user_photo_interfaceImg = document.getElementById("user_photo_interface");
+    const displayName_interface = document.getElementById("userName_interface");
+
+    if (user) {
+        if (user.isAnonymous) {
+            userInfoDiv.style.display = 'none';
+            if(authButtonsDiv) authButtonsDiv.style.display = 'block';
+        }else{
+            userInfoDiv.style.display = 'flex'; // ユーザー情報を表示
+            if(authButtonsDiv) authButtonsDiv.style.display = 'none'; // ログイン/登録ボタンを非表示
+            //if(signoutButton) signoutButton.style.display = 'inline-block'; // ログアウトボタンを表示
+            console.log(user.photoURL);
+            if (user.photoURL) {
+                user_photo_interfaceImg.src = user.photoURL;
+                userPhotoImg.src = user.photoURL;
+                userPhotoImg.style.display = 'inline-block';
+            } else {
+                userPhotoImg.src = '';
+                userPhotoImg.style.display = 'none';
+            }
+            console.log(user.displayName);
+            if (user.displayName) {
+                displayName_interface.textContent = user.displayName;
+                userDisplayNameSpan.textContent = user.displayName;
+            } else if (user.isAnonymous) {
+                userInfoDiv.style.display = 'none';
+                if(authButtonsDiv) authButtonsDiv.style.display = 'block';
+            } else if (user.email) {
+                displayName_interface.textContent = user.email.split('@')[0];
+                userDisplayNameSpan.textContent = user.email.split('@')[0];
+            } else {
+                userDisplayNameSpan.textContent = 'ユーザー';
+            }
+        }
+    } else {
+        // ログアウト状態のUI
+        userInfoDiv.style.display = 'none';
+        if(authButtonsDiv) authButtonsDiv.style.display = 'block';
+        //if(signoutButton) signoutButton.style.display = 'none';
+    }
+}
+
+const user_interface = document.getElementById("user_interface_container");
+let user_interface_view = false;
+let allowDelInfo = true;
+userInfoDiv.addEventListener("click",e=>{
+    if(allowDelInfo){
+        if(user_interface_view){
+            user_interface.style.display = "none";
+            profileUpdateStatus.style.display = "none";
+        }else{
+            user_interface.style.display = "block";
+        }
+        user_interface_view = !user_interface_view;
+    }
+})
+const del_button = document.getElementById("del_button");
+del_button.addEventListener("click",e=>{
+    if(allowDelInfo){
+        if(user_interface_view){
+            user_interface.style.display = "none";
+            profileUpdateStatus.style.display = "none";
+        }else{
+            user_interface.style.display = "block";
+        }
+        user_interface_view = !user_interface_view;
+    }
+})
+
+const logout_button = document.getElementById("logout_button");
+logout_button.addEventListener("click", async ()=>{
+    try {
+            // まず現在のユーザーをログアウトさせる
+            await auth.signOut();
+            console.log("ログアウトしました。");
+
+            // ★★★ ログアウト後、すぐに匿名サインインを実行 ★★★
+            //signInAnonymouslyOnce();
+            user_interface.style.display = "none";
+            user_interface_view = !user_interface_view;
+            updateLevelSelectionUI();
+            
+            // UI は onAuthStateChanged のコールバックで自動的に更新されるため、ここで特別なリダイレクトは不要
+            // （もしリダイレクトさせたい場合は、そのロジックをここに記述）
+            // 例: window.location.href = '/'; // メインページに戻す
+            
+            // onAuthStateChanged が発火し、updateUserProfileUI が呼ばれるはずなので、
+            // その後の処理はそちらに任せる。
+            // ユーザーは同じページに留まりつつ、匿名ユーザーとしてプレイを継続できる。
+            
+        } catch (error) {
+            console.error("ログアウトまたは匿名サインイン中にエラーが発生しました:", error);
+            // エラーが発生した場合は、ログインページにリダイレクトするなど、ユーザーに分かりやすい状態にする
+            window.location.href = '/login.html'; 
+        }
+})
 
 const recordOthelloResultCallable = functions.httpsCallable('recordOthelloResult');
 
@@ -302,7 +461,7 @@ async function fetchUserBestWins() {
     if (!currentUserUid) {
         console.warn("ユーザーがサインインしていません。勝利記録を取得できません。");
         // サインインを待つ、あるいはサインインさせる
-        await signInAnonymouslyOnce();
+        //await signInAnonymouslyOnce();
         if (!currentUserUid) {
             console.error("サインインに失敗したため、勝利記録を取得できません。");
             return null;
@@ -712,7 +871,7 @@ function start_up(mode=0) {
     current_color = "black";
     record = "";
     if(mode==0){
-        if (!currentUserUid) {
+        if (false) {
             signInAnonymouslyOnce().then(() => {
                 updateLevelSelectionUI(); // サインイン後にUIを更新
             });
@@ -785,6 +944,7 @@ async function updateLevelSelectionUI() {
                 } else {
                     // まだこのレベルに勝ったことがない場合
                     console.log("まだ勝ってない");
+                    document.getElementById(`lv${level}`).querySelector(".oukan").classList.add("not_cleard");
                     //levelElement.title = `Lv.${level} は未勝利`;
                 }
             }
@@ -1010,8 +1170,114 @@ document.getElementById("share-btn").addEventListener("click", () => {
 })
 
 
+const changeIcon = document.getElementById("changeIcon");
+const changeDisplayName = document.getElementById("changeDisplayName");
+const cancel = document.getElementById("cancel");
+const save = document.getElementById("save");
 
+const inputDisplayName = document.getElementById("inputDisplayName");
 
+let changeName;
+
+cancel.addEventListener("click",()=>{
+    allowDelInfo = true;
+    logout_button.style.display = "block";
+    changeIcon.style.display = "block";
+    changeDisplayName.style.display = "block";
+    cancel.style.display = "none";
+    save.style.display = "none";
+    del_button.style.display = "block";
+    document.getElementById("userName_interface").style.display = "block";
+    inputDisplayName.style.display = "none";
+    profileUpdateStatus.style.display = "none";
+})
+
+changeDisplayName.addEventListener("click",()=>{
+    allowDelInfo = false;
+    logout_button.style.display = "none";
+    changeIcon.style.display = "none";
+    changeDisplayName.style.display = "none";
+    cancel.style.display = "block";
+    save.style.display = "block";
+    del_button.style.display = "none";
+    
+
+    document.getElementById("userName_interface").style.display = "none";
+    inputDisplayName.style.display = "inline";
+    inputDisplayName.value = document.getElementById("userName_interface").textContent;
+    changeName = true;
+    profileUpdateStatus.style.display = "none";
+})
+
+profileUpdateStatus = document.getElementById("profileUpdateStatus");
+
+save.addEventListener("click",async ()=>{
+    profileUpdateStatus.style.display = "block";
+    profileUpdateStatus.textContent = '保存中...';
+    profileUpdateStatus.style.color = 'black';
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        profileUpdateStatus.textContent = 'エラー: ユーザーがログインしていません。';
+        profileUpdateStatus.style.color = 'red';
+        return;
+    }
+    let newDisplayName=null;
+    let updatedPhotoURL = currentUser.photoURL;
+    const authUpdates = {};
+    if(changeName){//変更するのが表示名なら
+        newDisplayName = inputDisplayName.value.trim();
+        if (currentUser.isAnonymous) {
+            profileUpdateStatus.textContent = 'エラー: ゲストユーザーはプロフィールを変更できません。';
+            profileUpdateStatus.style.color = 'red';
+            return;
+        }
+        // 入力値のバリデーション (例: 空白でないか、長さ制限など)
+        if (newDisplayName === '') {
+            profileUpdateStatus.textContent = 'エラー: ユーザー名は必須です。';
+            profileUpdateStatus.style.color = 'red';
+            return;
+        }
+        // 他のバリデーション (例: 長さ)
+        if (newDisplayName.length > 25) {
+            profileUpdateStatus.textContent = 'エラー: ユーザー名は20文字以内にしてください。';
+            profileUpdateStatus.style.color = 'red';
+            return;
+        }
+        if(newDisplayName !== document.getElementById("userName_interface").textContent){
+        
+        authUpdates.displayName = newDisplayName;
+    }
+    }
+    if (Object.keys(authUpdates).length > 0) { // 更新対象があれば
+        await currentUser.updateProfile(authUpdates);
+        console.log("Firebase Authentication のプロフィールを更新しました。", authUpdates);
+        const userRef = firestoreClient.collection('users').doc(currentUser.uid);
+        await userRef.set({
+            displayName: newDisplayName, // 必ず新しい名前で更新 (空白チェック済み)
+            photoURL: updatedPhotoURL,   // photoURLは、ファイル選択がなければ元のURLのまま、あれば新しいURL
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        console.log("Cloud Firestore のユーザープロフィールを更新しました。");
+    }
+    
+    
+
+    profileUpdateStatus.textContent = 'プロフィールが保存されました！';
+    profileUpdateStatus.style.color = 'green';
+    //const firestoreProfile = await getUserProfileFromFirestore(currentUser.uid);
+    //displayUserProfile(auth.currentUser, firestoreProfile); 
+    updateUserProfileUI(auth.currentUser);
+    allowDelInfo = true;
+    logout_button.style.display = "block";
+    changeIcon.style.display = "block";
+    changeDisplayName.style.display = "block";
+    cancel.style.display = "none";
+    save.style.display = "none";
+    del_button.style.display = "block";
+    document.getElementById("userName_interface").style.display = "block";
+    inputDisplayName.style.display = "none";
+
+})
 
 
 

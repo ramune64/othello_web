@@ -112,6 +112,27 @@
 </script>
 </head>
     <body>
+        <div id="user_interface_container">
+            <div id="del_button">
+                <span id="bar1"></span>
+                <span id="bar2"></span>
+            </div>
+            <div id="current_user_info">
+                <img src="" alt="" id="user_photo_interface">
+                <div id="userName_interface"></div>
+                <div>
+                <input type="text" name="displayName" id="inputDisplayName">
+                </div>
+            </div>
+            <div id="profileUpdateStatus"></div>
+            <div id="change_user_info">
+                <div id="changeIcon">アイコン画像を変える</div>
+                <div id="changeDisplayName">表示名を変える</div>
+                <div style="color: rgb(255, 121, 121);" id="logout_button">ログアウト</div>
+                <div style="color: rgb(255, 121, 121);" id="cancel">キャンセル</div>
+                <div id="save">保存</div>
+            </div>
+        </div>
         <div id="over_wrap"></div>
         <dialog id="loading">
             <h1>Loading...</h1>
@@ -161,6 +182,11 @@
                 <a href="../list.html">記事一覧</a>
                 <a href="#">オセロゲーム</a>
                 <a href="../stats.html">戦績グラフ</a>
+                <!-- <a href="../login.html" id="login_button" style="z-index: 10000;" >ログイン</a> -->
+                <a href="#" id="user-info" style="z-index: 10000;">
+                    <img src="" alt="" id="user-photo">
+                    <div id="user-display-name"></div>
+                </a>
             </nav>
         </div>
         <h2 id="theme">オセロゲーム with e-Coach_AI</h2>
@@ -255,52 +281,9 @@
                         <section><h5></h5><p></p></section>
                     </div>
                 </a>
-                <div class="ads">
-                    <!-- admax -->
-                    <div class="admax-switch" data-admax-id="305a1205361b0f40d49aae13519ccbea" style="display:inline-block;"></div>
-                    <script type="text/javascript">
-                    (admaxads = window.admaxads || []).push({admax_id: "305a1205361b0f40d49aae13519ccbea",type: "switch"});</script>
-                    <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-                    <!-- admax -->
-                </div>
-                <div class="ads">
-            
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="39fee66d53fcb638473cc0c0ffce024f" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "39fee66d53fcb638473cc0c0ffce024f",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
-        <div class="ads">
-            
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="39fee66d53fcb638473cc0c0ffce024f" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "39fee66d53fcb638473cc0c0ffce024f",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
+                
             </div>
             
-            <div class="ads">
-                <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
-                <div id= 'div_fam8_async_116272_3'>
-                <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116272&_mstype=3');</script>
-                </div>
-                <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
-                <div id= 'div_fam8_async_116272_3'>
-                <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116272&_mstype=3');</script>
-                </div>
-                <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
-                <div id= 'div_fam8_async_116273_3'>
-                <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116273&_mstype=3');</script>
-                </div>
-                <script src='https://fam-8.net/ad/js/fam8-tagify.min.js'></script>
-                <div id= 'div_fam8_async_116274_3'>
-                <script language='javascript'>fam8_js_async('https://fam-8.net/ad', '_site=19196&_loc=116274&_mstype=3');</script>
-                </div>
-            </div>
         </div>
             </div>
             <div id="fotter">
@@ -312,14 +295,7 @@
         </div>
         
         <div id="mode_button_parent">
-            <div class="ads">
-            <!-- admax -->
-            <div class="admax-switch" data-admax-id="39fee66d53fcb638473cc0c0ffce024f" style="display:inline-block;"></div>
-            <script type="text/javascript">
-            (admaxads = window.admaxads || []).push({admax_id: "39fee66d53fcb638473cc0c0ffce024f",type: "switch"});</script>
-            <script type="text/javascript" charset="utf-8" src="https://adm.shinobi.jp/st/t.js" async></script>
-            <!-- admax -->
-        </div>
+            
             <h1>モード選択</h1>
             <div class="mode_button" id="two">
                 <h2>2人で</h2>
