@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../style.css" type="text/css">
     <link rel="stylesheet" href="../style_index.css" type="text/css">
-    <meta property="og:image" content="articles/article2_imgs/thumb_article2.png">
+    <meta property="og:image" content="https://e-coach-ai.com/articles/article2_imgs/thumb_article2.png">
     <meta property="og:description" content="モンテカルロ木探索やそれに必要な木構造など、オセロアルゴリズムについて解説第2回">
     <meta property="og:title" content="オセロのアルゴリズムに関して2">
     <meta property="og:image:width" content="960">
@@ -13,17 +13,31 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://e-coach-ai.com/articles/article2.html">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@e_Coachi_AI">
+    <meta name="twitter:site" content="@e_Coach_AI">
     <script type="text/javascript" asyncsrc="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=MML_SVG"></script>
     <title>オセロのアルゴリズムに関して2</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
+     crossorigin="anonymous"></script>
+    <link rel="apple-touch-icon" href="../imgs\favicon.ico">
+    <link rel="icon" href="../imgs\favicon.ico">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-11Y9CHGM4E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-11Y9CHGM4E');
+</script>
 </head>
 <body>
     <div id="head_nav">
         <div id="header">
-            <a href="#"><img src="../imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
+            <a href="../"><img src="../imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
         </div>
         <nav>
-            <a href="../index.html">ホーム</a>
+            <a href="../">ホーム</a>
             <a href="../list.html">記事一覧</a>
             <a href="../play_othello.html">オセロゲーム</a>
         </nav>
@@ -44,6 +58,7 @@
                 <section><h5></h5><p></p></section>
             </div>
         </a>
+
         <h3 id="1">1.モンテカルロ法の問題点</h3>
         <p>
             基本的にモンテカルロ法では、着手可能手にそれぞれn回の試行を行う方式をとります。そのため、中盤の選択肢が膨らむ局面では試行回数が多くなり処理時間が長くなってしまうという問題があります。<br>
@@ -58,6 +73,7 @@
             です。<br>
             このようにして、“手の評価”と“試行回数の配分”を同時に最適化していくのがモンテカルロ木探索の基本的な考え方です。この手法では一定量の試行回数を効率的に割り振ることができるため、はやい速度を保つことが可能です。
         </p>
+
         <h3 id="2">2.木構造とは</h3>
         <p>
             モンテカルロ<b>「木」</b>探索という名前にもある通り、この手法では「木構造（ツリー構造）」という形を使って、探索の過程を整理・管理しています。<br>
@@ -85,6 +101,7 @@
         <p>
             この「木構造」は次回紹介するminimax法などでも活用されています。次回は、モンテカルロ木探索とminimax法での木構造の扱い方の違いにも触れていく予定です。
         </p>
+
         <h3 id="3">3.モンテカルロ木探索の詳細</h3>
         <p>
             さて、先ほど
@@ -184,12 +201,19 @@
         <img src="../articles/article2_imgs/img2.png" alt="モンテカルロ木探索の概要を表すフローチャート">
         <img src="../articles/article2_imgs/img3.png" alt="モンテカルロ木探索の概要を木構造の図を用いて説明する画像">
         <p>※上図のノードGの子ノードは、ノードH,I,Jの他にもあり、合計で18個以上あると思ってください。</p>
+
         <h3 id="4">4.おわりに</h3>
         <p>
             この記事では、モンテカルロ木探索について詳しく解説してきました。次回は、前回紹介した「minimax法」に関して、モンテカルロ木探索との違いも絡めつつ解説します。
         </p>
+
         <p><br><br>次の記事↓</p>
-        <h1 id="latest">この記事は最新です</h1>
+        <a href="../articles/procon1.html" target="_blank" class="same_domain">
+            <div>
+                <img src="" alt="リンク先のページのサムネイル画像">
+                <section><h5></h5><p></p></section>
+            </div>
+        </a>
         <p>前回の記事↓</p>
         <a href="../articles/article1.html" target="_blank" class="same_domain">
             <div>
@@ -197,13 +221,15 @@
                 <section><h5></h5><p></p></section>
             </div>
         </a>
+
     </div>
     <div id="fotter">
-                <a id="x" href="https://x.com/e_Coachi_AI" target="_blank">
+                <a id="x" href="https://x.com/e_Coach_AI" target="_blank">
                     <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
                 </a>
                 <p>&copy; 2025 ЯAMUNE</p>
             </div>
+
     <script src="../article.js"></script>
 </body>
 </html>

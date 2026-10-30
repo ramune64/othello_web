@@ -1,9 +1,12 @@
-/.build
+/build
 /.vscode
+/emsdk
 /csvs
 /opponents
-/opponents1_2
-/opponents2
 /weights
-/weights1_2
+/opponents2
 /weights2
+/opponents1_2
+/weights1_2
+/node_modules
+

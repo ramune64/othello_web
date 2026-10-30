@@ -1,1 +1,7 @@
-black
+print(minimax(black,white,5,alpha=float('-inf'),beta=float('inf'),maximizing_player=True))
+    act = RowCol()
+    score = c_float()
+    lib.minimax(black,white,3,-9999999.0,9999999.0,True,0,0,byref(act), byref(score))
+    print("r:",act.row,"c:",act.col)
+    act = convert_act_bit2str((act.row,act.col))
+    print(act)

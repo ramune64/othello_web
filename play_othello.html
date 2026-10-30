@@ -1,41 +1,96 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    
     <meta charset="UTF-8">
         
 
         <link rel="stylesheet" href="style.css" type="text/css">
         <link rel="stylesheet" href="style_index.css" type="text/css">
+
+
         <!-- PyScript CSS -->
         <link rel="stylesheet" href="https://pyscript.net/releases/2024.11.1/core.css">
         <!-- <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script> -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- PyScriptの読み込み -->
         <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
-    <meta property="og:image" content="imgs/thumb2.png">
-    <meta property="og:description" content="オセロコーチングアプリである、e-coach_AIに搭載されているオセロアルゴリズムと対戦をしたり、他の人と対戦することができるページです。対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。">
-    <meta property="og:title" content="オセロ with e-Coach_AI">
+    <meta property="og:image" content="https://e-coach-ai.com/imgs/thumb2.png">
+    <meta property="og:description" content="オセロコーチングアプリである、e-coach_AIに搭載されているオセロAIと対戦をしたり、他の人と対戦することができるページです。対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。">
+    <meta property="og:title" content="オセロ with e-Coach_AI オセロAI(CPU)とブラウザで対戦が可能">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="384">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://e-coach-ai.com/play_othello.html">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@e_Coachi_AI">
+    <meta name="twitter:site" content="@e_Coach_AI">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9408963746965745"
+     crossorigin="anonymous"></script>
+     <link rel="apple-touch-icon" href="../imgs\favicon.ico">
+     <link rel="icon" href="../imgs\favicon.ico">
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <py-config>
         packages = ["numpy"]
         [[fetch]]
         files = ["./othello_play.py"]
     </py-config>
+    
     <!-- Pythonが読み込まれるまでLoadingを表示 -->
     <style>
         #loading { outline: none; border: none; background: transparent }
     </style>
+    <script>
+        let wasm_ready = false;
+        let minimax_c = null;
+        let minimax_old_c = null;
+        var Module = {
+            onRuntimeInitialized() {
+            minimax_c = Module.cwrap("minimax", null, [
+                "bigint", "bigint", "number", "number", "number",
+                "number", "number", "number", "number", "number"
+            ]);
+            minimax_old_c = Module.cwrap("minimax", null, [
+                "bigint", "bigint", "number", "number", "number",
+                "number", "number", "number", "number", "number"
+            ]);
+            wasm_ready = true;
+            console.log("wasm_OK");
+            checkReady();
+            }
+};
+</script>
     <script src="othello_logic.js"></script>
+    
     <script type="module">
+        
         const over_wrap = document.getElementById("over_wrap");
         const mode_button_parent = document.getElementById("mode_button_parent");
         const loading = document.getElementById('loading');
-        addEventListener('py:ready', () => {loading.close();over_wrap.style.display="block";mode_button_parent.style.display="block";});
+        
+        let py_ready = false;
+        
+        addEventListener('py:ready', () => {
+            py_ready = true;
+            console.log("python_OK");
+            checkReady();
+        });
+        /* function checkReady() {
+        if (wasm_ready && py_ready) {
+            loading.close();
+            over_wrap.style.display="block";
+            mode_button_parent.style.display="block";
+            console.log("✅ WASM & Python ready");
+        }
+        
+} */
+        window.checkReady = function () {
+    if (wasm_ready && py_ready) {
+        loading.close();
+        over_wrap.style.display = "block";
+        mode_button_parent.style.display = "block";
+        console.log("✅ WASM & Python ready");
+    }
+};
         loading.showModal();
         
     </script>
@@ -46,16 +101,48 @@
         
         
     </script> -->
-    <title>オセロ with e-coach_AI</title>
+    <title>【無料】オセロ オセロAI(CPU)とブラウザで対戦が可能 -ブラウザで遊べる最強(当社比)αβ探索AI</title>
+    <meta name="description" content="オセロAIがブラウザでプレイ可能！WebAssemblyによる高速思考、レベル9の強敵に挑戦しよう。X共有機能付き。">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-11Y9CHGM4E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-11Y9CHGM4E');
+</script>
 </head>
     <body>
+        <!-- <div id="user_interface_container">
+            <div id="del_button">
+                <span id="bar1"></span>
+                <span id="bar2"></span>
+            </div>
+            <div id="current_user_info">
+                <img src="" alt="" id="user_photo_interface">
+                <div id="userName_interface"></div>
+                <div>
+                <input type="text" name="displayName" id="inputDisplayName">
+                </div>
+            </div>
+            <div id="profileUpdateStatus"></div>
+            <div id="change_user_info">
+                <div id="changeIcon">アイコン画像を変える</div>
+                <div id="changeDisplayName">表示名を変える</div>
+                <div style="color: rgb(255, 121, 121);" id="logout_button">ログアウト</div>
+                <div style="color: rgb(255, 121, 121);" id="cancel">キャンセル</div>
+                <div id="save">保存</div>
+            </div>
+        </div> -->
         <div id="over_wrap"></div>
         <dialog id="loading">
             <h1>Loading...</h1>
         </dialog>
+        
         <py-script>
             import js
-            from js import start_up
+            #from js import start_up
             from pyscript import display
             import numpy as np
             import asyncio
@@ -83,17 +170,25 @@
             js.get_legal_square = get_legal_square
             js.identify_flip_stone = identify_flip_stone
             js.minimax = minimax
-            
-            start_up()
+            print("start_upを実行します。")
+            js.start_up()
+            #js.save_result(1,4,"aa")
+
         </py-script>
         <div id="head_nav">
             <div id="header">
-                <a href="#"><img src="imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
+                <a href="../"><img src="imgs\sawayaka.png" alt="e-Coach_AIのロゴ画像" id="logo"></a>
             </div>
             <nav>
-                <a href="../index.html">ホーム</a>
+                <a href="../">ホーム</a>
                 <a href="../list.html">記事一覧</a>
                 <a href="#">オセロゲーム</a>
+
+                <!-- <a href="../login.html" id="login_button" style="z-index: 10000;" >ログイン</a> -->
+                <!-- <a href="#" id="user-info" style="z-index: 10000;">
+                    <img src="" alt="" id="user-photo">
+                    <div id="user-display-name"></div>
+                </a> -->
             </nav>
         </div>
         <h2 id="theme">オセロゲーム with e-Coach_AI</h2>
@@ -141,9 +236,10 @@
                 <div id="ad_space3" class="ad_space1"></div>
             </div>
             <div id="overview" class="main_content">
+
                 <p style="font-size: 12pt;">
-                    <span id="intro">オセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-Coach_AI</u></b><br>
-                    に搭載されているオセロアルゴリズムと対戦をしたり、他の人と対戦することができるページです。<br>対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。</span><br>
+                    <span id="intro">ブラウザ上でオセロコーチングアプリである、<br><b><u style="font-size: 25pt;">e-Coach_AI</u></b><br>
+                    に搭載されているオセロ(リバーシ)アルゴリズムとWEB上で対戦ができるページです。<br>対局後に出力される棋譜データは製品の＜振り返りモード＞で活用できます。</span><br>
                     アプリの概要はこちら↓から
                 </p>
                 <a href="index.html" target="_blank" class="same_domain">
@@ -161,14 +257,14 @@
                         <section><h5></h5><p></p></section>
                     </div>
                 </a>
+
+                
             </div>
-            <div id="ad_space2_parent">
-                <div id="ad_space4" class="ad_space2"></div>
-                <div id="ad_space5" class="ad_space2"></div>
-                <div id="ad_space6" class="ad_space2"></div>
+            
+        </div>
             </div>
             <div id="fotter">
-                <a id="x" href="https://x.com/e_Coachi_AI" target="_blank">
+                <a id="x" href="https://x.com/e_Coach_AI" target="_blank">
                     <img src="../imgs/logo-black.png" alt="SNSであるXのロゴ画像" id="x_logo"><span>@e_Coachi_AI</span>
                 </a>
                 <p>&copy; 2025 ЯAMUNE</p>
@@ -176,32 +272,60 @@
         </div>
         
         <div id="mode_button_parent">
+            
             <h1>モード選択</h1>
             <div class="mode_button" id="two">
                 <h2>2人で</h2>
             </div>
             <div class="flex">
                 <div class="mode_button" id="lv0">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV0,Random)</h2>
                 </div>
                 <div class="mode_button" id="lv1">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV1,depth=1)</h2>
                 </div>
                 <div class="mode_button" id="lv2">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV2,depth=2)</h2>
                 </div>
                 <div class="mode_button" id="lv3">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV3,depth=3)</h2>
                 </div>
                 <div class="mode_button" id="lv4">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV4,depth=4)</h2>
                 </div>
                 <div class="mode_button" id="lv5">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
                     <h2>CPUと(LV5,depth=5)</h2>
                 </div>
+                <div class="mode_button" id="lv6">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
+                    <h2>CPUと(LV6,depth=6)</h2>
+                </div>
+                <div class="mode_button" id="lv7">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
+                    <h2>CPUと(LV7,depth=7)</h2>
+                </div>
+                <div class="mode_button" id="lv8">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
+                    <h2>CPUと(LV8,depth=8)</h2>
+                </div>
+                <div class="mode_button" id="lv8.5">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
+                    <h2>CPUと(LV8.5,depth=8+α,<br>old type)</h2>
+                </div>
+                <div class="mode_button" id="lv9">
+                    <img src="./imgs/oukan.png" alt="勝利したことがあるかを示す王冠の画像" class="oukan not_cleard">
+                    <h2>CPUと(LV9,depth=8+α)</h2>
+                </div>
             </div>
-            <h3>※レベルが高い(特にLV5)ほど計算に時間がかかります</h3>
+            <h3>※レベルが高いほど計算に時間がかかります</h3>
             <h3>※計算中に「応答なし」と通知されることがありますが、待機してください。</h3>
+            
         </div>
         <div id="color_button_parent">
             <h1>あなたの手番を選択</h1>
@@ -226,12 +350,16 @@
             <p><span id="black_stone"></span>黒：<span id="black_num"></span>枚</p>
             <p><span id="white_stone"></span>白：<span id="white_num"></span>枚</p>
             <p>で<span id="winner"></span></p>
+            <button id="share-btn">𝕏で結果をシェアする</button>
             <h2>棋譜データ</h2>
+        
             <span id="copy">クリップボードにコピー</span>
             <p id="record"></p>
         </div>
         <!-- <button onclick="a()">aaaaaaa</button> -->
+    <!-- <script src="./firebaseConfig.js"></script> -->
     <script src="./main.js"></script>
     <script src="./article.js"></script>
+    
     </body>
 </html>
