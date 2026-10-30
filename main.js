@@ -1,485 +1,18 @@
 console.log("main.js: スクリプトの実行を開始しました。");
 
-
-const firebaseConfigDev  = {
-    apiKey: "AIzaSyARbLoBNG0h1JDUZWgmTO5uQaFFaGjL4r0",
-    authDomain: "e-coach-ai-dev.firebaseapp.com",
-    databaseURL: "https://e-coach-ai-dev-default-rtdb.firebaseio.com",
-    projectId: "e-coach-ai-dev",
-    storageBucket: "e-coach-ai-dev.firebasestorage.app",
-    messagingSenderId: "594985646322",
-    appId: "1:594985646322:web:2986bf3d12b1693e85f86b"
-};
-const firebaseConfigProd  = {
-    apiKey: "AIzaSyCQY-RCNAOKjvp8ItF4SJOr3iCgNjZSrGM",
-    authDomain: "e-coach-ai.firebaseapp.com",
-    databaseURL: "https://e-coach-ai-default-rtdb.firebaseio.com",
-    projectId: "e-coach-ai",
-    storageBucket: "e-coach-ai.firebasestorage.app",
-    messagingSenderId: "250769341822",
-    appId: "1:250769341822:web:5d49eff013adeef941c72f",
-    measurementId: "G-VJJVMNV2HX"
-};
-
-let selectedFirebaseConfig;
-
-// 現在のホスト名に基づいて Firebase 設定を選択
-if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    console.log("Local development environment detected. Using DEV Firebase project.");
-    selectedFirebaseConfig = firebaseConfigDev;
-} else if (window.location.hostname === "e-coach-ai.com" || window.location.hostname === "e-coach-ai.firebaseapp.com") {
-    console.log("Production environment detected. Using PROD Firebase project.");
-    selectedFirebaseConfig = firebaseConfigProd;
-} else {
-    console.warn("Unknown environment. Defaulting to DEV Firebase project. Please check hostname:", window.location.hostname);
-  selectedFirebaseConfig = firebaseConfigDev; // またはエラーをスロー
-}
-
-
-// Initialize Firebase (compat バージョンは firebase グローバル変数を使用)
-// firebase-app-compat.js を読み込むと window.firebase が使えるようになる
-const app = firebase.initializeApp(selectedFirebaseConfig);
-const analytics = firebase.analytics(); // firebase-analytics-compat.js を読み込むと使える
-const database = firebase.database(); // firebase-database-compat.js を読み込むと使える
-const functions = firebase.functions(); // ここで firebase.functions() を呼び出してインスタンスを取得
-const firestoreClient = firebase.firestore();
-/**
- * 日本時間 (JST) で今日の日付を 'YYYY-MM-DD' 形式で取得します。
- * クライアントのローカルタイムゾーンに関わらず、常にJSTで処理します。
- */
-function getJSTDateString(date = new Date()) {
-    // Intl.DateTimeFormat を使用して、指定したタイムゾーンで日付をフォーマットします。
-    // ほとんどのモダンブラウザは 'Asia/Tokyo' タイムゾーンをサポートしています。
-    const formatter = new Intl.DateTimeFormat('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        timeZone: 'Asia/Tokyo'
-    });
-    // formatToParts を使用して、日付の各部分を抽出して 'YYYY-MM-DD' 形式を構築します。
-    const parts = formatter.formatToParts(date);
-    const year = parts.find(p => p.type === 'year')?.value;
-    const month = parts.find(p => p.type === 'month')?.value;
-    const day = parts.find(p => p.type === 'day')?.value;
-    return `${year}-${month}-${day}`;
-}
-
-/**
- * 日本時間 (JST) で指定された日数前の日付を 'YYYY-MM-DD' 形式で取得します。
- * 日数計算もJST基準で行います。
- */
-function getJSTPastDateString(daysAgo) {
-    // JSTの今日の日付文字列を取得し、それを元にDateオブジェクトを作成することで、
-    // クライアントのローカルタイムゾーンの影響を受けずにJSTでの日数計算を可能にします。
-    const jstTodayString = getJSTDateString(new Date());
-    const [year, month, day] = jstTodayString.split('-').map(Number);
-    // Date.UTC を使用して、JSTの日付をUTCとして設定します (例: 2023-11-20 00:00 UTC)
-    const jstDate = new Date(Date.UTC(year, month - 1, day));
-
-    // UTCの日付から指定日数分を減算します
-    jstDate.setUTCDate(jstDate.getUTCDate() - daysAgo);
-
-    // 減算後の日付を再びJSTとしてフォーマットします
-    const formatter = new Intl.DateTimeFormat('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        timeZone: 'Asia/Tokyo'
-    });
-    const parts = formatter.formatToParts(jstDate);
-    const pastYear = parts.find(p => p.type === 'year')?.value;
-    const pastMonth = parts.find(p => p.type === 'month')?.value;
-    const pastDay = parts.find(p => p.type === 'day')?.value;
-    return `${pastYear}-${pastMonth}-${pastDay}`;
-}
-/**
- * 2日以上前のデータを削除します。
- * recordCpuGameResult が実行される際にトリガーされます。
- */
-
-async function cleanupOldDailyCpuStats() {
-    //const database = window.database;
-    const twoDaysAgoJST = getJSTPastDateString(2); // 日本時間で2日前の日付を取得 (例: 2023-11-18)
-    const dailyStatsRef = database.ref('daily_cpu_stats');
-
-    try {
-        const snapshot = await dailyStatsRef.once('value'); // daily_cpu_stats の全てのデータを一度取得
-        if (snapshot.exists()) {
-        const allDates = snapshot.val();
-        const dateKeys = Object.keys(allDates || {}); // 存在する全ての日付キー (例: ["2023-11-17", "2023-11-18", "2023-11-19", ...])
-
-        for (const dateKey of dateKeys) {
-            // 日付文字列の辞書順比較を利用して、古い日付を判定します。
-            // 例: "2023-11-17" < "2023-11-18" は true となり、古いデータと判断されます。
-            if (dateKey <= twoDaysAgoJST) {
-            console.log(`古いデータ (${dateKey}) を削除します...`);
-            await database.ref(`daily_cpu_stats/${dateKey}`).set(null); // nullを設定することでノードを削除
-            }
-        }
-        }
-    } catch (error) {
-        console.error("古いデータのクリーンアップ中にエラーが発生しました:", error);
-    }
-}
-const auth = firebase.auth();
-let currentUserUid = null; // 現在の匿名ユーザーのUIDを保持する変数
-/* auth.onAuthStateChanged(async (user) => {
-    // ユーザーの状態が変わるたびにここが発火する
-    if (user) {
-        // ユーザーが何らかの方法でログイン済みの場合 (Googleログイン、または匿名ログイン済み)
-        currentUserUid = user.uid;
-        console.log("onAuthStateChanged: ユーザーログイン済み。UID:", currentUserUid, "isAnonymous:", user.isAnonymous);
-
-        // Firestore に最終ログイン日時を記録 (Googleログイン/匿名ログイン問わず)
+// ゲーム結果の保存（ローカルストレージを使用）
+async function save_result(cpuResult, lv, record) {
+    console.log("save_result: ゲーム終了", { cpuResult, lv });
+    // cpuResult === -1 はプレイヤーの勝利
+    if (cpuResult === -1) {
         try {
-            const userRef = firestoreClient.collection('users').doc(currentUserUid);
-            await userRef.set({
-                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            console.log(`Firestore: ユーザー ${currentUserUid} の最終ログイン日時を更新しました。`);
-        } catch (firestoreError) {
-            console.error("Firestore: 最終ログイン日時更新中にエラーが発生しました:", firestoreError);
-        }
-
-        // ★★★ ユーザー情報のUI表示を更新する
-        updateUserProfileUI(user); 
-
-        // ここでゲームの初期化などを行う
-        //initializeGameWithUser(currentUserUid); 
-
-    } else {
-        // ユーザーが完全にログアウト状態の場合
-        currentUserUid = null;
-        console.log("onAuthStateChanged: ユーザーはログアウト状態です。自動匿名サインインを試みます。");
-
-        // ★★★ ログアウト状態の場合のみ、匿名サインインを実行 ★★★
-        try {
-            const userCredential = await auth.signInAnonymously();
-            currentUserUid = userCredential.user.uid;
-            console.log("onAuthStateChanged: 匿名ユーザーとしてサインイン成功！UID:", currentUserUid);
-
-            // 匿名サインイン後も、Firestore の最終ログイン日時を記録
-            try {
-                const userRef = firestoreClient.collection('users').doc(currentUserUid);
-                await userRef.set({
-                    lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-                console.log(`Firestore: 匿名ユーザー ${currentUserUid} の最終ログイン日時を更新しました。`);
-            } catch (firestoreError) {
-                console.error("Firestore: 匿名ユーザーの最終ログイン日時更新中にエラーが発生しました:", firestoreError);
-            }
-
-            // 匿名ユーザーとしてログイン後、UIを更新
-            //updateUserProfileUI(userCredential.user);
-            //initializeGameWithUser(currentUserUid); // ゲーム初期化
+            const key = `othello_cleared_level_${lv}`;
+            localStorage.setItem(key, new Date().toISOString());
+            console.log(`Lv.${lv} 勝利記録をローカルに保存しました。`);
             updateLevelSelectionUI();
-        } catch (error) {
-            console.error("onAuthStateChanged: 匿名サインイン中にエラーが発生しました:", error);
+        } catch (e) {
+            console.error("ローカルストレージへの保存に失敗しました:", e);
         }
-    }
-}); */
-// アプリのロード時に匿名サインインを試みる関数
-async function signInAnonymouslyOnce() {
-    if (firebase.auth().currentUser) {
-        currentUserUid = firebase.auth().currentUser.uid;
-        console.log("匿名ユーザーとして既にサインイン済みです！UID:", currentUserUid);
-        return;
-    }
-    try {
-        const userCredential = await firebase.auth().signInAnonymously(); // firebase.auth() を使う
-        currentUserUid = userCredential.user.uid;
-        console.log("匿名ユーザーとしてサインインしました！UID:", currentUserUid);
-        // ★追加: Firestore に最終ログイン日時を記録
-        try {
-            const userRef = firestoreClient.collection('users').doc(currentUserUid);
-            console.log("got_UID:",currentUserUid);
-            await userRef.set({
-                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true }); // merge: true で既存フィールドを上書きしない
-            console.log(`Firestore: ユーザー ${currentUserUid} の最終ログイン日時を更新しました。`);
-        } catch (firestoreError) {
-            console.error("Firestore: 最終ログイン日時更新中にエラーが発生しました:", firestoreError);
-        }
-    } catch (error) {
-        console.error("匿名サインイン中にエラーが発生しました:", error);
-        // エラーが発生したら、currentUserUid は null のまま
-    }
-    
-}
-/* const userInfoDiv = document.getElementById('user-info');
-function updateUserProfileUI(user) {
-    // ... 以前提案した updateUserProfileUI の実装 ...
-    
-    const userPhotoImg = document.getElementById('user-photo');
-    const userDisplayNameSpan = document.getElementById('user-display-name');
-    //const signoutButton = document.getElementById('signout-button'); // ログアウトボタン
-    const authButtonsDiv = document.getElementById('login_button'); // ログイン/登録ボタンのコンテナ
-
-    const user_photo_interfaceImg = document.getElementById("user_photo_interface");
-    const displayName_interface = document.getElementById("userName_interface");
-
-    if (user) {
-        if (user.isAnonymous) {
-            userInfoDiv.style.display = 'none';
-            if(authButtonsDiv) authButtonsDiv.style.display = 'block';
-        }else{
-            userInfoDiv.style.display = 'flex'; // ユーザー情報を表示
-            if(authButtonsDiv) authButtonsDiv.style.display = 'none'; // ログイン/登録ボタンを非表示
-            //if(signoutButton) signoutButton.style.display = 'inline-block'; // ログアウトボタンを表示
-            console.log(user.photoURL);
-            if (user.photoURL) {
-                user_photo_interfaceImg.src = user.photoURL;
-                userPhotoImg.src = user.photoURL;
-                userPhotoImg.style.display = 'inline-block';
-            } else {
-                userPhotoImg.src = '';
-                userPhotoImg.style.display = 'none';
-            }
-            console.log(user.displayName);
-            if (user.displayName) {
-                displayName_interface.textContent = user.displayName;
-                userDisplayNameSpan.textContent = user.displayName;
-            } else if (user.isAnonymous) {
-                userInfoDiv.style.display = 'none';
-                if(authButtonsDiv) authButtonsDiv.style.display = 'block';
-            } else if (user.email) {
-                displayName_interface.textContent = user.email.split('@')[0];
-                userDisplayNameSpan.textContent = user.email.split('@')[0];
-            } else {
-                userDisplayNameSpan.textContent = 'ユーザー';
-            }
-        }
-    } else {
-        // ログアウト状態のUI
-        userInfoDiv.style.display = 'none';
-        if(authButtonsDiv) authButtonsDiv.style.display = 'block';
-        //if(signoutButton) signoutButton.style.display = 'none';
-    }
-}
-
-const user_interface = document.getElementById("user_interface_container");
-let user_interface_view = false;
-let allowDelInfo = true;
-userInfoDiv.addEventListener("click",e=>{
-    if(allowDelInfo){
-        if(user_interface_view){
-            user_interface.style.display = "none";
-            profileUpdateStatus.style.display = "none";
-        }else{
-            user_interface.style.display = "block";
-        }
-        user_interface_view = !user_interface_view;
-    }
-}) */
-/* const del_button = document.getElementById("del_button");
-del_button.addEventListener("click",e=>{
-    if(allowDelInfo){
-        if(user_interface_view){
-            user_interface.style.display = "none";
-            profileUpdateStatus.style.display = "none";
-        }else{
-            user_interface.style.display = "block";
-        }
-        user_interface_view = !user_interface_view;
-    }
-}) */
-
-/* const logout_button = document.getElementById("logout_button");
-logout_button.addEventListener("click", async ()=>{
-    try {
-            // まず現在のユーザーをログアウトさせる
-            await auth.signOut();
-            console.log("ログアウトしました。");
-
-            // ★★★ ログアウト後、すぐに匿名サインインを実行 ★★★
-            //signInAnonymouslyOnce();
-            user_interface.style.display = "none";
-            user_interface_view = !user_interface_view;
-            updateLevelSelectionUI();
-            
-            // UI は onAuthStateChanged のコールバックで自動的に更新されるため、ここで特別なリダイレクトは不要
-            // （もしリダイレクトさせたい場合は、そのロジックをここに記述）
-            // 例: window.location.href = '/'; // メインページに戻す
-            
-            // onAuthStateChanged が発火し、updateUserProfileUI が呼ばれるはずなので、
-            // その後の処理はそちらに任せる。
-            // ユーザーは同じページに留まりつつ、匿名ユーザーとしてプレイを継続できる。
-            
-        } catch (error) {
-            console.error("ログアウトまたは匿名サインイン中にエラーが発生しました:", error);
-            // エラーが発生した場合は、ログインページにリダイレクトするなど、ユーザーに分かりやすい状態にする
-            window.location.href = '/login.html'; 
-        }
-}) */
-
-const recordOthelloResultCallable = functions.httpsCallable('recordOthelloResult');
-
-async function save_result(cpuResult,lv,record){
-    // まず、匿名認証が完了していることを確認
-    console.log("save start");
-    if (!firebase.auth().currentUser) { // firebase.auth().currentUser で現在のユーザーを確認
-        console.warn("ユーザーがサインインしていません。匿名サインインを試みます。");
-        await signInAnonymouslyOnce(); // 匿名サインインが完了するまで待つ
-        if (!firebase.auth().currentUser) { // 再度確認。サインインに失敗した場合はここで終了
-            console.error("匿名サインインに失敗したため、ゲーム結果を送信できません。");
-            alert("ゲーム結果を記録できませんでした。もう一度お試しください。");
-            return;
-        }
-    }
-    console.log("save_result: Cloud Function を呼び出す直前。");
-    console.log("save_result: firebase.auth().currentUser:", firebase.auth().currentUser); // ここが null でないこと
-    if (firebase.auth().currentUser) {
-        console.log("save_result: currentUser.uid:", firebase.auth().currentUser.uid); // UID が表示されること
-        try {
-            const idTokenResult = await firebase.auth().currentUser.getIdTokenResult();
-            console.log("save_result: currentUser.getIdTokenResult().token:", idTokenResult.token); // IDトークンが表示されること
-            // ★重要: これが null や undefined ではないこと。そして、取得時にエラーが出ないこと。
-        } catch (tokenError) {
-            console.error("save_result: IDトークン取得エラー:", tokenError); // エラーが出ないこと
-        }
-    } else {
-        console.log("save_result: currentUser は null です。"); // ★このログが出ていたら問題
-    }
-    try {
-        console.log("通信開始");
-        // Callable Cloud Function を呼び出す
-        const result = await recordOthelloResultCallable({
-            cpuLevel: lv,
-            cpuResult: cpuResult,
-            record :record,
-        });
-        console.log("Cloud Functionからの応答:", result.data);
-
-        // 必要であれば、Cloud Functionの応答に基づいてUIを更新
-        if (result.data.status === 'success') {
-            console.log(`ゲーム結果が正常にサーバーに記録されました。CPUレベル${lv}`);
-            // ここで displayDailyCpuGameStats を呼び出して、UIを更新しても良いでしょう
-            // displayDailyCpuGameStats(lv); 
-        } else {
-            console.warn(`ゲーム結果の記録に問題が発生しました: ${result.data.message}`);
-        }
-
-    } catch (error) {
-    console.error("Cloud Functionの呼び出し中にエラーが発生しました:", error.message);
-    if (error.code === 'unauthenticated') {
-        console.error("認証が必要です。再度サインインを試みてください。");
-    } else if (error.code === 'invalid-argument') {
-        console.error("無効な引数がCloud Functionに渡されました。");
-    } else if (error.code === 'resource-exhausted') { // レートリミットのエラーハンドリング
-        alert("リクエストが多すぎます。1分後に再度ゲーム結果を送信できます。");
-        console.warn("レートリミットに達しました。");
-    } else {
-        console.error("その他の不明なエラー:", error.code);
-    }
-}
-}
-
-
-async function save_result2(cpu_result,lv){
-    await cleanupOldDailyCpuStats();
-    //const database = window.database;
-    const todayJST = getJSTDateString(); // 日本時間での今日の日付を取得
-    const statsRef = database.ref(`daily_cpu_stats/${todayJST}/cpu_level_${lv}`);
-    statsRef.transaction((currentData) => {
-        const data = currentData || { wins: 0, losses: 0, draws: 0 };
-        if (cpu_result === 1) data.wins++;
-        else if (cpu_result === -1) data.losses++;
-        else if (cpu_result === 0) data.draws++;
-        return data;
-    })
-    .then((result) => {
-        if (result.committed) {
-            console.log(`CPUレベル${lv}との今日の勝敗が正常に更新されました！`);
-        } else {
-            console.log(`CPUレベル${lv}との今日の勝敗更新はコミットされませんでした (トランザクションが中断された可能性)。`);
-        }
-    })
-    .catch((error) => {
-        console.error(`CPUレベル${lv}との勝敗更新中にエラーが発生しました:`, error);
-    });
-}
-
-async function getDailyCpuGameStats(cpuLevel) {
-    const todayJST = getJSTDateString();
-    const statsRef = database.ref(`daily_cpu_stats/${todayJST}/cpu_level_${cpuLevel}`);
-
-    try {
-        // once('value') は Promise を返すので await で結果を待てます
-        const snapshot = await statsRef.once('value');
-        const data = snapshot.val();
-
-        if (data) {
-            const wins = data.wins || 0;
-            const losses = data.losses || 0;
-            const draws = data.draws || 0;
-            console.log(`JST:${todayJST} CPUレベル${cpuLevel}: 勝利 ${wins} 回, 敗北 ${losses} 回, 引き分け ${draws} 回`);
-            return { wins, losses, draws };
-        } else {
-            console.log(`JST:${todayJST} CPUレベル${cpuLevel}: まだゲーム結果が記録されていません。`);
-            return { wins: 0, losses: 0, draws: 0 };
-        }
-    } catch (error) {
-        console.error(`CPUレベル${cpuLevel}の統計取得中にエラーが発生しました:`, error);
-        return { wins: 0, losses: 0, draws: 0 }; // エラー時もデフォルト値を返す
-    }
-}
-
-async function displayDailyCpuGameStats() {
-    console.log("日次CPUゲーム統計の表示を開始します...");
-    const allStats = {}; // 全CPUレベルの統計を格納するオブジェクト
-
-    for (let cpuLevel = 0; cpuLevel <= 9; cpuLevel++) {
-        // await を使って、各CPUレベルの統計取得が完了するのを待つ
-        const stats = await getDailyCpuGameStats(cpuLevel);
-        allStats[cpuLevel] = stats;
-        
-        // ここでUIを更新する処理を追加できます
-        // 例: document.getElementById(`cpu-stats-level-${cpuLevel}`).innerText = `勝利: ${stats.wins}, 敗北: ${stats.losses}`;
-        // console.log(`表示用: CPUレベル${cpuLevel} - 勝利: ${stats.wins}, 敗北: ${stats.losses}, 引き分け: ${stats.draws}`);
-    }
-    const stats = await getDailyCpuGameStats(85);
-    allStats[85] = stats;
-    console.log("すべてのCPUレベルの統計取得が完了しました:", allStats);
-    for (let cpuLevel = 0; cpuLevel <= 9; cpuLevel++) {
-        const id_name = `lv_${cpuLevel}win_rate`;
-        const lv_parent = document.getElementById(id_name);
-        lv_parent.querySelector(".num_win").textContent = allStats[cpuLevel].losses;
-        lv_parent.querySelector(".num_lose").textContent = allStats[cpuLevel].wins;
-        lv_parent.querySelector(".num_draw").textContent = allStats[cpuLevel].draws;
-    }
-    let cpuLevel = 85;
-    const id_name = `lv_${cpuLevel}win_rate`;
-    const lv_parent = document.getElementById(id_name);
-    lv_parent.querySelector(".num_win").textContent = allStats[cpuLevel].losses;
-    lv_parent.querySelector(".num_lose").textContent = allStats[cpuLevel].wins;
-    lv_parent.querySelector(".num_draw").textContent = allStats[cpuLevel].draws;
-    return allStats; // 必要に応じて集計結果を返す
-}
-displayDailyCpuGameStats();
-
-async function fetchUserBestWins() {
-    if (!currentUserUid) {
-        console.warn("ユーザーがサインインしていません。勝利記録を取得できません。");
-        // サインインを待つ、あるいはサインインさせる
-        //await signInAnonymouslyOnce();
-        if (!currentUserUid) {
-            console.error("サインインに失敗したため、勝利記録を取得できません。");
-            return null;
-        }
-    }
-
-    try {
-        const doc = await firestoreClient.collection('user_best_wins').doc(currentUserUid).get();
-        if (doc.exists) {
-            console.log("ユーザーの勝利記録を取得しました:", doc.data());
-            return doc.data(); // ドキュメントのデータを返す
-        } else {
-            console.log("このユーザーの勝利記録はまだありません。");
-            return {}; // 空のオブジェクトを返す
-        }
-    } catch (error) {
-        console.error("ユーザーの勝利記録の取得中にエラーが発生しました:", error);
-        return null;
     }
 }
 
@@ -871,13 +404,7 @@ function start_up(mode=0) {
     current_color = "black";
     record = "";
     if(mode==0){
-        if (false) {
-            signInAnonymouslyOnce().then(() => {
-                updateLevelSelectionUI(); // サインイン後にUIを更新
-            });
-        } else {
-            updateLevelSelectionUI(); // 既にサインイン済みならすぐにUIを更新
-        }
+        updateLevelSelectionUI();
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col <8; col++) {
                 const id_name = col_letters[col] + (row+1);
@@ -923,52 +450,34 @@ function start_up(mode=0) {
 
 }
 
-async function updateLevelSelectionUI() {
-    const bestWins = await fetchUserBestWins(); // ユーザーの勝利記録を取得
-
-    if (bestWins) {
-        for (let level = 0; level <= 9; level++) {
-            const levelWonField = `level_${level}_won_at`;
-            //const levelElement = document.getElementById(`cpu_level_${level}_selector`); // 例: レベル選択ボタンのID
-            
-            if (true) {
-                if (bestWins[levelWonField]) {
-                    // このレベルに勝ったことがある場合
-                    //levelElement.classList.add('level-won'); // 勝ったことを示すCSSクラスを追加
-                    console.log(`Lv.${level} に勝利済み (${bestWins[levelWonField].toDate().toLocaleString()})`); // ツールチップに日時表示
-                    document.getElementById(`lv${level}`).querySelector(".oukan").classList.remove("not_cleard");
-                    // 例: チェックマークアイコンを表示する要素を追加
-                    // const checkmark = document.createElement('span');
-                    // checkmark.textContent = ' ✅';
-                    // levelElement.appendChild(checkmark);
+function updateLevelSelectionUI() {
+    for (let level = 0; level <= 9; level++) {
+        const key = `othello_cleared_level_${level}`;
+        const isWon = localStorage.getItem(key);
+        const elem = document.getElementById(`lv${level}`);
+        if (elem) {
+            const oukan = elem.querySelector(".oukan");
+            if (oukan) {
+                if (isWon) {
+                    oukan.classList.remove("not_cleard");
                 } else {
-                    // まだこのレベルに勝ったことがない場合
-                    console.log("まだ勝ってない");
-                    document.getElementById(`lv${level}`).querySelector(".oukan").classList.add("not_cleard");
-                    //levelElement.title = `Lv.${level} は未勝利`;
+                    oukan.classList.add("not_cleard");
                 }
             }
         }
-        let level = 85;
-        const levelWonField = `level_${level}_won_at`;
-        if (true) {
-                if (bestWins[levelWonField]) {
-                    // このレベルに勝ったことがある場合
-                    //levelElement.classList.add('level-won'); // 勝ったことを示すCSSクラスを追加
-                    console.log(`Lv.${8.5} に勝利済み (${bestWins[levelWonField].toDate().toLocaleString()})`); // ツールチップに日時表示
-                    document.getElementById(`lv${8.5}`).querySelector(".oukan").classList.remove("not_cleard");
-                    // 例: チェックマークアイコンを表示する要素を追加
-                    // const checkmark = document.createElement('span');
-                    // checkmark.textContent = ' ✅';
-                    // levelElement.appendChild(checkmark);
-                } else {
-                    // まだこのレベルに勝ったことがない場合
-                    console.log("まだ勝ってない");
-                    //levelElement.title = `Lv.${level} は未勝利`;
-                }
-            }
     }
-    // console.log("レベル選択UIの更新が完了しました。");
+    const isWon85 = localStorage.getItem("othello_cleared_level_8.5") || localStorage.getItem("othello_cleared_level_85");
+    const elem85 = document.getElementById("lv8.5");
+    if (elem85) {
+        const oukan = elem85.querySelector(".oukan");
+        if (oukan) {
+            if (isWon85) {
+                oukan.classList.remove("not_cleard");
+            } else {
+                oukan.classList.add("not_cleard");
+            }
+        }
+    }
 }
 
 window.start_up = start_up;
@@ -1096,7 +605,6 @@ reset.addEventListener("click",()=>{
     level_txt.innerText = "";
     whitch_color.style.display = "none";
     updateLevelSelectionUI();
-    displayDailyCpuGameStats();
     start_up(1);
 })
 
@@ -1170,114 +678,6 @@ document.getElementById("share-btn").addEventListener("click", () => {
 })
 
 
-const changeIcon = document.getElementById("changeIcon");
-const changeDisplayName = document.getElementById("changeDisplayName");
-const cancel = document.getElementById("cancel");
-const save = document.getElementById("save");
-
-const inputDisplayName = document.getElementById("inputDisplayName");
-
-let changeName;
-
-cancel.addEventListener("click",()=>{
-    allowDelInfo = true;
-    logout_button.style.display = "block";
-    changeIcon.style.display = "block";
-    changeDisplayName.style.display = "block";
-    cancel.style.display = "none";
-    save.style.display = "none";
-    del_button.style.display = "block";
-    document.getElementById("userName_interface").style.display = "block";
-    inputDisplayName.style.display = "none";
-    profileUpdateStatus.style.display = "none";
-})
-
-changeDisplayName.addEventListener("click",()=>{
-    allowDelInfo = false;
-    logout_button.style.display = "none";
-    changeIcon.style.display = "none";
-    changeDisplayName.style.display = "none";
-    cancel.style.display = "block";
-    save.style.display = "block";
-    del_button.style.display = "none";
-    
-
-    document.getElementById("userName_interface").style.display = "none";
-    inputDisplayName.style.display = "inline";
-    inputDisplayName.value = document.getElementById("userName_interface").textContent;
-    changeName = true;
-    profileUpdateStatus.style.display = "none";
-})
-
-profileUpdateStatus = document.getElementById("profileUpdateStatus");
-
-save.addEventListener("click",async ()=>{
-    profileUpdateStatus.style.display = "block";
-    profileUpdateStatus.textContent = '保存中...';
-    profileUpdateStatus.style.color = 'black';
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-        profileUpdateStatus.textContent = 'エラー: ユーザーがログインしていません。';
-        profileUpdateStatus.style.color = 'red';
-        return;
-    }
-    let newDisplayName=null;
-    let updatedPhotoURL = currentUser.photoURL;
-    const authUpdates = {};
-    if(changeName){//変更するのが表示名なら
-        newDisplayName = inputDisplayName.value.trim();
-        if (currentUser.isAnonymous) {
-            profileUpdateStatus.textContent = 'エラー: ゲストユーザーはプロフィールを変更できません。';
-            profileUpdateStatus.style.color = 'red';
-            return;
-        }
-        // 入力値のバリデーション (例: 空白でないか、長さ制限など)
-        if (newDisplayName === '') {
-            profileUpdateStatus.textContent = 'エラー: ユーザー名は必須です。';
-            profileUpdateStatus.style.color = 'red';
-            return;
-        }
-        // 他のバリデーション (例: 長さ)
-        if (newDisplayName.length > 25) {
-            profileUpdateStatus.textContent = 'エラー: ユーザー名は20文字以内にしてください。';
-            profileUpdateStatus.style.color = 'red';
-            return;
-        }
-        if(newDisplayName !== document.getElementById("userName_interface").textContent){
-        
-        authUpdates.displayName = newDisplayName;
-    }
-    }
-    if (Object.keys(authUpdates).length > 0) { // 更新対象があれば
-        await currentUser.updateProfile(authUpdates);
-        console.log("Firebase Authentication のプロフィールを更新しました。", authUpdates);
-        const userRef = firestoreClient.collection('users').doc(currentUser.uid);
-        await userRef.set({
-            displayName: newDisplayName, // 必ず新しい名前で更新 (空白チェック済み)
-            photoURL: updatedPhotoURL,   // photoURLは、ファイル選択がなければ元のURLのまま、あれば新しいURL
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        console.log("Cloud Firestore のユーザープロフィールを更新しました。");
-    }
-    
-    
-
-    profileUpdateStatus.textContent = 'プロフィールが保存されました！';
-    profileUpdateStatus.style.color = 'green';
-    //const firestoreProfile = await getUserProfileFromFirestore(currentUser.uid);
-    //displayUserProfile(auth.currentUser, firestoreProfile); 
-    updateUserProfileUI(auth.currentUser);
-    allowDelInfo = true;
-    logout_button.style.display = "block";
-    changeIcon.style.display = "block";
-    changeDisplayName.style.display = "block";
-    cancel.style.display = "none";
-    save.style.display = "none";
-    del_button.style.display = "block";
-    document.getElementById("userName_interface").style.display = "block";
-    inputDisplayName.style.display = "none";
-
-})
 
 
 
